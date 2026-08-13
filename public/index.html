@@ -659,7 +659,15 @@ const db = firebase.firestore();
   async function loadConfig(){
     try {
       const doc = await db.collection('meta').doc('config').get();
-      state.config = doc.exists ? { ...DEFAULT_CONFIG, ...doc.data() } : { ...DEFAULT_CONFIG };
+      if(doc.exists){
+        const data = doc.data();
+        const fbKeys = new Set((data.sections||[]).map(s=>s.key));
+        const missing = DEFAULT_CONFIG.sections.filter(s=>!fbKeys.has(s.key));
+        data.sections = [...(data.sections||[]), ...missing];
+        state.config = { ...DEFAULT_CONFIG, ...data };
+      } else {
+        state.config = { ...DEFAULT_CONFIG };
+      }
     } catch(e){ state.config = { ...DEFAULT_CONFIG }; }
   }
   async function saveConfig(c){
