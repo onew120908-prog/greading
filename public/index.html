@@ -1,0 +1,1122 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GA 읽다, 잇다</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📖</text></svg>">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@500;700;900&family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  #bg-root, #bg-root * { box-sizing: border-box; }
+  #bg-root {
+    --paper: #F5F0E4;
+    --paper-line: #E3D9C2;
+    --ink: #2B2620;
+    --ink-soft: #6B6152;
+    --forest: #2F5D4E;
+    --forest-dark: #1E4235;
+    --gold: #B4862B;
+    --gold-soft: #EFD9A0;
+    --clay: #A6473D;
+    --clay-soft: #F3D9CE;
+    --sage: #DCE6DA;
+    --card: #FFFDF8;
+    --shadow: 0 2px 10px rgba(43,38,32,0.08), 0 1px 2px rgba(43,38,32,0.06);
+    font-family: 'Noto Sans KR', sans-serif;
+    color: var(--ink);
+    background: var(--paper);
+    min-height: 100vh;
+    position: relative;
+    overflow-x: hidden;
+  }
+  #bg-root .serif { font-family: 'Noto Serif KR', serif; }
+  #bg-root::before {
+    content: "";
+    position: fixed; inset: 0; pointer-events: none; z-index: 0;
+    background-image: radial-gradient(rgba(43,38,32,0.035) 1px, transparent 1px);
+    background-size: 14px 14px;
+  }
+  .spiral {
+    position: fixed; top: 0; left: 0; bottom: 0; width: 26px;
+    background: linear-gradient(180deg, #EAE1CC, #DED2B4);
+    border-right: 1px solid var(--paper-line);
+    z-index: 5;
+    display: flex; flex-direction: column; align-items: center;
+    padding-top: 40px; gap: 22px;
+  }
+  .spiral span {
+    width: 12px; height: 12px; border-radius: 50%;
+    background: radial-gradient(circle at 35% 35%, #fff, #cfc2a0 60%, #b3a480);
+    box-shadow: inset 0 0 0 1px rgba(43,38,32,0.15);
+  }
+  @media (max-width: 640px) { .spiral { display: none; } }
+  .shell { position: relative; z-index: 1; margin-left: 26px; min-height: 100vh; }
+  @media (max-width: 640px) { .shell { margin-left: 0; } }
+  .container { max-width: 880px; margin: 0 auto; padding: 28px 22px 80px; }
+  .topbar {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 22px; border-bottom: 1px solid var(--paper-line);
+    background: rgba(245,240,228,0.9); backdrop-filter: blur(4px);
+    position: sticky; top: 0; z-index: 10;
+  }
+  .brand { display: flex; align-items: center; gap: 10px; }
+  .brand .mark {
+    width: 34px; height: 30px; border-radius: 6px;
+    background: var(--forest); color: #fff; display: flex; align-items: center; justify-content: center;
+    font-family: 'Noto Serif KR', serif; font-weight: 900; font-size: 12px; letter-spacing: -0.5px;
+    transform: rotate(-4deg);
+  }
+  .brand .name { font-family: 'Noto Serif KR', serif; font-weight: 700; font-size: 19px; letter-spacing: -0.2px; }
+  .who { font-size: 13px; color: var(--ink-soft); display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .who button {
+    border: 1px solid var(--paper-line); background: var(--card); color: var(--ink-soft);
+    padding: 6px 12px; border-radius: 999px; font-size: 12.5px; cursor: pointer;
+  }
+  .who button:hover { background: var(--sage); color: var(--forest-dark); }
+  .landing { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 24px; }
+  .landing-inner { max-width: 720px; width: 100%; text-align: center; }
+  .landing-title { font-family: 'Noto Serif KR', serif; font-weight: 900; font-size: 36px; letter-spacing: -0.5px; margin-bottom: 8px; }
+  .landing-sub { color: var(--ink-soft); font-size: 15px; margin-bottom: 40px; }
+  .role-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  @media (max-width: 560px) { .role-grid { grid-template-columns: 1fr; } }
+  .role-card {
+    background: var(--card); border: 1px solid var(--paper-line); border-radius: 16px;
+    padding: 30px 22px; cursor: pointer; text-align: left; box-shadow: var(--shadow);
+    transition: transform .15s ease, box-shadow .15s ease; position: relative; overflow: hidden;
+  }
+  .role-card:hover { transform: translateY(-3px); box-shadow: 0 10px 24px rgba(43,38,32,0.14); }
+  .role-card .tab {
+    position: absolute; top: 0; right: 18px; width: 54px; height: 16px;
+    background: var(--gold-soft); border-radius: 0 0 8px 8px;
+  }
+  .role-card.teacher .tab { background: var(--clay-soft); }
+  .role-card .icon { font-size: 26px; margin-bottom: 12px; }
+  .role-card h3 { font-family: 'Noto Serif KR', serif; font-size: 20px; margin: 0 0 6px; }
+  .role-card p { font-size: 13.5px; color: var(--ink-soft); margin: 0; line-height: 1.55; }
+  .gate { max-width: 420px; margin: 90px auto; background: var(--card); border: 1px solid var(--paper-line);
+    border-radius: 16px; padding: 32px 28px; box-shadow: var(--shadow); }
+  .gate h2 { font-family: 'Noto Serif KR', serif; margin: 0 0 6px; font-size: 22px; }
+  .gate p.hint { color: var(--ink-soft); font-size: 13.5px; margin: 0 0 20px; }
+  .field { margin-bottom: 14px; }
+  .field label { display: block; font-size: 12.5px; color: var(--ink-soft); margin-bottom: 6px; font-weight: 500; }
+  .field input, .field textarea, .field select {
+    width: 100%; border: 1px solid var(--paper-line); background: #fff; border-radius: 10px;
+    padding: 10px 12px; font-size: 14.5px; font-family: 'Noto Sans KR', sans-serif; color: var(--ink);
+  }
+  .field input:focus, .field textarea:focus, .field select:focus {
+    outline: 2px solid var(--forest); outline-offset: 1px; border-color: var(--forest);
+  }
+  .field textarea { resize: vertical; min-height: 90px; line-height: 1.6; }
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+    border: none; border-radius: 10px; padding: 10px 18px; font-size: 14px; font-weight: 500;
+    cursor: pointer; font-family: 'Noto Sans KR', sans-serif; transition: all .15s ease;
+  }
+  .btn-primary { background: var(--forest); color: #fff; }
+  .btn-primary:hover { background: var(--forest-dark); }
+  .btn-primary:disabled { opacity: .5; cursor: not-allowed; }
+  .btn-ghost { background: transparent; color: var(--ink-soft); border: 1px solid var(--paper-line); }
+  .btn-ghost:hover { background: var(--sage); }
+  .btn-danger { background: var(--clay); color: #fff; }
+  .btn-danger:hover { background: #8C3A32; }
+  .btn-sm { padding: 6px 12px; font-size: 12.5px; }
+  .btn-block { width: 100%; }
+  .btn-saving {
+    position: relative; pointer-events: none; opacity: .7;
+  }
+  .btn-saving::after {
+    content: ''; display: inline-block; width: 14px; height: 14px;
+    border: 2px solid rgba(255,255,255,0.3); border-top-color: #fff;
+    border-radius: 50%; animation: spin .6s linear infinite; margin-left: 6px;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .btn-done { background: #3A8A5C; pointer-events: none; }
+  .tabbar { display: flex; gap: 4px; margin: 22px 0 0; border-bottom: 2px solid var(--forest); padding: 0 4px; flex-wrap: wrap; }
+  .tabbtn {
+    font-family: 'Noto Serif KR', serif; font-size: 14px; font-weight: 700; cursor: pointer;
+    padding: 10px 18px; border: none; background: var(--sage); color: var(--forest-dark);
+    border-radius: 10px 10px 0 0; opacity: .65; position: relative; top: 2px;
+  }
+  .tabbtn.active { background: var(--forest); color: #fff; opacity: 1; top: 0; }
+  .panel { background: var(--card); border: 1px solid var(--paper-line); border-top: none;
+    border-radius: 0 0 14px 14px; padding: 24px; box-shadow: var(--shadow); }
+  .section-title { font-family: 'Noto Serif KR', serif; font-size: 17px; font-weight: 700; margin: 0 0 4px; }
+  .section-desc { font-size: 13px; color: var(--ink-soft); margin: 0 0 16px; }
+  .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  @media (max-width: 560px) { .row2 { grid-template-columns: 1fr; } }
+  .divider { height: 1px; background: var(--paper-line); margin: 26px 0; }
+  .entry-list { display: flex; flex-direction: column; gap: 14px; }
+  .entry {
+    background: #fff; border: 1px solid var(--paper-line); border-left: 5px solid var(--forest);
+    border-radius: 10px; padding: 14px 16px; position: relative;
+  }
+  .entry.type-book { border-left-color: var(--gold); }
+  .entry.type-free { border-left-color: #5B7A9E; }
+  .entry-top { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+  .entry-title { font-weight: 700; font-size: 14.5px; }
+  .entry-date { font-size: 12px; color: var(--ink-soft); white-space: nowrap; }
+  .entry-meta { font-size: 12.5px; color: var(--ink-soft); margin-top: 2px; }
+  .entry-body { font-size: 14px; line-height: 1.65; margin-top: 8px; white-space: pre-wrap; }
+  .badge { display: inline-block; font-size: 11px; padding: 2px 8px; border-radius: 999px; font-weight: 700; }
+  .badge-daily { background: var(--sage); color: var(--forest-dark); }
+  .badge-book { background: var(--gold-soft); color: #7A5A16; }
+  .badge-free { background: #DCE6F0; color: #34506C; }
+  .stars { color: var(--gold); font-size: 13px; letter-spacing: 1px; }
+  .sticky {
+    margin-top: 12px; background: #FFF3C4; border-radius: 6px; padding: 10px 12px;
+    transform: rotate(-0.6deg); box-shadow: 0 3px 8px rgba(0,0,0,0.08);
+    font-size: 13.5px; color: #5B3E10; position: relative;
+  }
+  .sticky b { color: var(--clay); font-family: 'Noto Serif KR', serif; }
+  .empty { text-align: center; padding: 40px 20px; color: var(--ink-soft); }
+  .empty .big { font-size: 30px; margin-bottom: 10px; }
+  .stu-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px,1fr)); gap: 14px; }
+  .stu-card {
+    background: var(--card); border: 1px solid var(--paper-line); border-radius: 12px; padding: 16px;
+    cursor: pointer; box-shadow: var(--shadow); transition: transform .12s ease;
+  }
+  .stu-card:hover { transform: translateY(-2px); }
+  .stu-card h4 { font-family: 'Noto Serif KR', serif; font-size: 16px; margin: 0 0 8px; }
+  .stu-card .stat { font-size: 12px; color: var(--ink-soft); margin-bottom: 3px; }
+  .stu-card .dot { display:inline-block; width:7px; height:7px; border-radius:50%; margin-right:5px; }
+  .dot-ok { background: var(--forest); } .dot-warn { background: var(--clay); }
+  .fbform { margin-top: 10px; display: flex; gap: 8px; }
+  .fbform textarea { flex: 1; min-height: 44px; font-size: 13.5px; padding: 8px 10px; border-radius: 8px; border: 1px solid var(--paper-line); font-family: 'Noto Sans KR',sans-serif; }
+  .fbform button { align-self: flex-end; }
+  .toast {
+    position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+    background: var(--forest-dark); color: #fff; padding: 10px 20px; border-radius: 999px;
+    font-size: 13.5px; z-index: 50; box-shadow: 0 6px 18px rgba(0,0,0,0.25);
+    animation: toastIn .25s ease;
+  }
+  @keyframes toastIn { from { opacity:0; transform: translateX(-50%) translateY(10px); } to { opacity:1; transform: translateX(-50%) translateY(0); } }
+  .backlink { font-size: 13px; color: var(--forest-dark); cursor: pointer; display: inline-flex; align-items: center; gap: 4px; margin-bottom: 14px; font-weight: 500; }
+  .backlink:hover { text-decoration: underline; }
+  .weeklock { display:flex; align-items:center; gap:8px; background: var(--sage); color: var(--forest-dark);
+    padding: 8px 12px; border-radius: 8px; font-size: 12.5px; margin-bottom: 14px; }
+  .star-picker { display: flex; gap: 4px; }
+  .star-picker span { cursor: pointer; font-size: 22px; color: #D8CFB9; }
+  .star-picker span.on { color: var(--gold); }
+  .quote-block {
+    font-style: italic; border-left: 3px solid var(--gold); padding: 4px 12px;
+    margin: 10px 0; color: #6B5620; background: #FBF4E2; border-radius: 0 6px 6px 0; font-size: 13.5px;
+  }
+  .cal-head { display: flex; align-items: center; justify-content: center; gap: 18px; margin-bottom: 14px; }
+  .cal-head .navbtn {
+    background: var(--sage); border: none; color: var(--forest-dark); width: 30px; height: 30px;
+    border-radius: 50%; cursor: pointer; font-size: 15px; line-height: 1;
+  }
+  .cal-head .navbtn:hover { background: var(--forest); color: #fff; }
+  .cal-title { font-family: 'Noto Serif KR', serif; font-weight: 700; font-size: 17px; min-width: 110px; text-align: center; }
+  .cal-grid { display: grid; grid-template-columns: repeat(7,1fr); gap: 6px; }
+  .cal-wd { text-align: center; font-size: 11.5px; color: var(--ink-soft); font-weight: 700; padding-bottom: 4px; }
+  .cal-cell {
+    aspect-ratio: 1; display: flex; align-items: center; justify-content: center; border-radius: 10px;
+    font-size: 12px; border: 1px solid var(--paper-line); background: #fff; color: var(--ink-soft); position: relative;
+  }
+  .cal-cell.empty-cell { border: none; background: transparent; }
+  .cal-cell.got { background: var(--gold-soft); border-color: var(--gold); color: #7A5A16; }
+  .cal-cell.got .sticker { font-size: 17px; }
+  .cal-cell.miss { background: #F7F3EA; color: #C3B89E; }
+  .cal-cell.today { box-shadow: 0 0 0 2px var(--forest) inset; font-weight: 700; }
+  .cal-summary { display: flex; align-items: center; gap: 10px; margin: 16px 0 4px; font-size: 13.5px; color: var(--ink-soft); flex-wrap: wrap; }
+  .cal-summary b { color: var(--forest-dark); font-size: 17px; }
+  .perfect-badge {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: linear-gradient(135deg, var(--gold-soft), #fff); border: 1px solid var(--gold);
+    color: #7A5A16; padding: 7px 14px; border-radius: 999px; font-weight: 700; font-size: 12.5px;
+  }
+  .cal-mini-wrap { background: var(--card); border: 1px solid var(--paper-line); border-radius: 12px; padding: 18px; margin-bottom: 20px; box-shadow: var(--shadow); }
+  .setting-card { background: var(--card); border: 1px solid var(--paper-line); border-radius: 12px; padding: 20px; margin-bottom: 16px; box-shadow: var(--shadow); }
+  .setting-card h3 { font-family: 'Noto Serif KR', serif; font-size: 16px; margin: 0 0 12px; }
+  .color-row { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+  .color-row label { font-size: 13px; min-width: 80px; color: var(--ink-soft); }
+  .color-row input[type=color] { width: 36px; height: 30px; border: 1px solid var(--paper-line); border-radius: 6px; padding: 2px; cursor: pointer; }
+  .sort-item { display: flex; align-items: center; gap: 8px; padding: 8px 12px; background: #fff; border: 1px solid var(--paper-line); border-radius: 8px; margin-bottom: 6px; }
+  .sort-item .handle { cursor: grab; color: var(--ink-soft); font-size: 16px; }
+  .sort-item .sort-label { flex: 1; font-size: 14px; }
+  .sort-item button { font-size: 12px; }
+  .stu-manage { display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; background: #fff; border: 1px solid var(--paper-line); border-radius: 8px; margin-bottom: 6px; }
+  .stu-manage .nm { font-size: 14px; font-weight: 500; }
+  .stu-manage .info { font-size: 12px; color: var(--ink-soft); }
+  .pw-error { color: var(--clay); font-size: 13px; margin-top: 8px; }
+  .rev-toggle {
+    font-size: 12px; color: var(--ink-soft); cursor: pointer; margin-top: 8px;
+    display: inline-flex; align-items: center; gap: 4px; padding: 3px 8px;
+    background: var(--sage); border-radius: 6px; border: none; font-family: 'Noto Sans KR', sans-serif;
+  }
+  .rev-toggle:hover { background: var(--forest); color: #fff; }
+  .rev-list { margin-top: 10px; border-top: 1px dashed var(--paper-line); padding-top: 10px; }
+  .rev-item {
+    background: #F9F6EE; border: 1px solid var(--paper-line); border-radius: 8px;
+    padding: 10px 12px; margin-bottom: 8px; font-size: 13px;
+  }
+  .rev-item .rev-head { font-size: 11.5px; color: var(--ink-soft); margin-bottom: 4px; font-weight: 500; }
+  .rev-item .rev-body { white-space: pre-wrap; line-height: 1.55; color: var(--ink-soft); }
+  .teacher-actions { display: flex; gap: 10px; margin-bottom: 18px; flex-wrap: wrap; }
+</style>
+</head>
+<body style="margin:0;">
+
+<div id="bg-root">
+  <div class="spiral">
+    <span></span><span></span><span></span><span></span><span></span><span></span>
+    <span></span><span></span><span></span><span></span><span></span><span></span>
+    <span></span><span></span><span></span><span></span><span></span><span></span>
+  </div>
+  <div class="shell" id="shell"></div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script>
+firebase.initializeApp({
+  apiKey: "AIzaSyCMLgfKcPF-gMWrRtLUzvYqQKj4m93HP-M",
+  authDomain: "reading-a8c63.firebaseapp.com",
+  projectId: "reading-a8c63",
+  storageBucket: "reading-a8c63.firebasestorage.app",
+  messagingSenderId: "1091833569255",
+  appId: "1:1091833569255:web:94f29a5aa2d996bcf86742"
+});
+const db = firebase.firestore();
+</script>
+
+<script>
+(function(){
+  const shell = document.getElementById('shell');
+  let saving = false;
+
+  const DEFAULT_CONFIG = {
+    password: '0000',
+    sections: [
+      { key: 'daily', label: '읽다', color: '#2F5D4E' },
+      { key: 'stickers', label: '쌓다', color: '#B4862B' },
+      { key: 'book', label: '잇다', color: '#B4862B' },
+      { key: 'free', label: '짓다', color: '#5B7A9E' },
+      { key: 'mine', label: '담다', color: '#6B6152' },
+    ],
+    themeColor: '#2F5D4E',
+  };
+
+  const state = {
+    role: null,
+    studentName: null,
+    tab: 'daily',
+    teacherView: 'list',
+    teacherSelected: null,
+    students: [],
+    record: null,
+    loading: false,
+    config: null,
+  };
+
+  function uid(){ return Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
+  function todayStr(){ return new Date().toISOString().slice(0,10); }
+  function fmtDate(s){
+    if(!s) return '';
+    const d = new Date(s + (s.length===10?'T00:00:00':''));
+    return `${d.getMonth()+1}월 ${d.getDate()}일`;
+  }
+  function fmtDateFull(s){
+    if(!s) return '';
+    const d = new Date(s + (s.length===10?'T00:00:00':''));
+    return `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}`;
+  }
+  function getWeekKey(dateStr){
+    const date = new Date(dateStr + 'T00:00:00');
+    date.setDate(date.getDate() + 3 - ((date.getDay()+6)%7));
+    const week1 = new Date(date.getFullYear(),0,4);
+    const weekNo = 1 + Math.round(((date - week1) / 86400000 - 3 + ((week1.getDay()+6)%7))/7);
+    return `${date.getFullYear()}-W${String(weekNo).padStart(2,'0')}`;
+  }
+  function esc(str){
+    return (str||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  }
+  function pad2(n){ return String(n).padStart(2,'0'); }
+  function monthKey(dateStr){
+    const d = new Date(dateStr + 'T00:00:00');
+    return `${d.getFullYear()}-${pad2(d.getMonth()+1)}`;
+  }
+  function monthLabel(ym){ const [y,m] = ym.split('-').map(Number); return `${y}년 ${m}월`; }
+  function shiftMonth(ym, delta){
+    let [y,m] = ym.split('-').map(Number);
+    m += delta;
+    if(m<1){ m=12; y--; } if(m>12){ m=1; y++; }
+    return `${y}-${pad2(m)}`;
+  }
+  function cfg(){ return state.config || DEFAULT_CONFIG; }
+  function sectionLabel(key){ const s = cfg().sections.find(x=>x.key===key); return s ? s.label : key; }
+  function sectionColor(key){ const s = cfg().sections.find(x=>x.key===key); return s ? s.color : '#2F5D4E'; }
+  function applyTheme(){
+    const c = cfg();
+    const root = document.getElementById('bg-root');
+    if(c.themeColor) root.style.setProperty('--forest', c.themeColor);
+  }
+
+  function calendarStats(record, ym){
+    const [y,m] = ym.split('-').map(Number);
+    const dim = new Date(y, m, 0).getDate();
+    const todayS = todayStr();
+    const dailyDates = new Set(record.entries.filter(e=>e.type==='daily').map(e=>e.date));
+    const firstDow = new Date(y, m-1, 1).getDay();
+    const cells = [];
+    for(let i=0;i<firstDow;i++) cells.push(null);
+    let got = 0, elapsed = 0;
+    for(let d=1; d<=dim; d++){
+      const ds = `${y}-${pad2(m)}-${pad2(d)}`;
+      const isFuture = ds > todayS;
+      const has = dailyDates.has(ds);
+      if(!isFuture){ elapsed++; if(has) got++; }
+      cells.push({ day:d, date:ds, has, isFuture, isToday: ds===todayS });
+    }
+    const isCurrentMonth = ym === monthKey(todayS);
+    return { y, m, dim, cells, got, elapsed, isCurrentMonth };
+  }
+  function calendarHtml(stats, idPrefix){
+    const weekdayNames = ['일','월','화','수','목','금','토'];
+    const perfectPast = !stats.isCurrentMonth && stats.dim>0 && stats.got===stats.dim;
+    const perfectSoFar = stats.isCurrentMonth && stats.elapsed>0 && stats.got===stats.elapsed;
+    return `
+      <div class="cal-head">
+        <button class="navbtn" id="${idPrefix}-prev">‹</button>
+        <div class="cal-title">${monthLabel(idPrefix==='cal'?state.stickerMonth:state.teacherStickerMonth)}</div>
+        <button class="navbtn" id="${idPrefix}-next">›</button>
+      </div>
+      <div class="cal-grid">
+        ${weekdayNames.map(w=>`<div class="cal-wd">${w}</div>`).join('')}
+        ${stats.cells.map(c=>{
+          if(!c) return `<div class="cal-cell empty-cell"></div>`;
+          const cls = c.isFuture ? '' : (c.has? 'got':'miss');
+          return `<div class="cal-cell ${cls} ${c.isToday?'today':''}">${c.has && !c.isFuture ? `<span class="sticker">⭐</span>` : `<span class="num">${c.day}</span>`}</div>`;
+        }).join('')}
+      </div>
+      <div class="cal-summary">이번 달 스티커 <b>${stats.got}</b> / ${stats.isCurrentMonth ? stats.elapsed : stats.dim}일
+        ${perfectPast ? `<span class="perfect-badge">🎁 개근 달성! 선물 받을 수 있어요</span>` : perfectSoFar ? `<span class="perfect-badge">✨ 지금까지 매일 성공 중!</span>` : ''}
+      </div>`;
+  }
+  function toast(msg){
+    document.querySelectorAll('.toast').forEach(t=>t.remove());
+    const t = document.createElement('div');
+    t.className = 'toast'; t.textContent = msg;
+    document.body.appendChild(t);
+    setTimeout(()=>t.remove(), 2500);
+  }
+
+  function btnSaving(btn){
+    btn.disabled = true;
+    btn.dataset.origText = btn.textContent;
+    btn.textContent = '저장 중...';
+    btn.classList.add('btn-saving');
+  }
+  function btnDone(btn){
+    btn.classList.remove('btn-saving');
+    btn.classList.add('btn-done');
+    btn.textContent = '저장 완료!';
+    setTimeout(()=>{
+      btn.classList.remove('btn-done');
+      btn.disabled = false;
+      btn.textContent = btn.dataset.origText || '저장';
+    }, 1500);
+  }
+  function btnReset(btn){
+    btn.classList.remove('btn-saving');
+    btn.disabled = false;
+    btn.textContent = btn.dataset.origText || '저장';
+  }
+
+  function revisionsHtml(entry){
+    const revs = entry.revisions;
+    if(!revs || !revs.length) return '';
+    return `
+      <button class="rev-toggle" data-id="${entry.id}">이전 수정 내역 (${revs.length}건) ▾</button>
+      <div class="rev-list" id="revs-${entry.id}" style="display:none;">
+        ${revs.slice().reverse().map((r,i)=>`
+          <div class="rev-item">
+            <div class="rev-head">${revs.length - i}차 수정 전 · ${fmtDate(r.date)}</div>
+            ${r.title ? `<div style="font-weight:600;margin-bottom:2px;">${esc(r.title)}</div>` : ''}
+            <div class="rev-body">${esc(r.content || r.note || r.review || '')}</div>
+          </div>
+        `).join('')}
+      </div>`;
+  }
+  function bindRevisionToggles(container){
+    container.querySelectorAll('.rev-toggle').forEach(btn=>{
+      btn.onclick = (e) => {
+        e.stopPropagation();
+        const list = document.getElementById('revs-' + btn.dataset.id);
+        if(list){
+          const open = list.style.display !== 'none';
+          list.style.display = open ? 'none' : 'block';
+          btn.textContent = btn.textContent.replace(open ? '▴' : '▾', open ? '▾' : '▴');
+        }
+      };
+    });
+  }
+
+  // ---------- Firestore storage ----------
+  async function loadStudents(){
+    try {
+      const doc = await db.collection('meta').doc('students').get();
+      return doc.exists ? doc.data().list : [];
+    } catch(e){ console.error(e); return []; }
+  }
+  async function saveStudents(list){
+    try { await db.collection('meta').doc('students').set({ list }); } catch(e){ console.error(e); }
+  }
+  async function loadRecord(name){
+    try {
+      const doc = await db.collection('records').doc(name).get();
+      return doc.exists ? doc.data() : { entries: [] };
+    } catch(e){ console.error(e); return { entries: [] }; }
+  }
+  async function saveRecord(name, rec){
+    try { await db.collection('records').doc(name).set(rec); return true; }
+    catch(e){ console.error(e); toast('저장에 실패했어요. 다시 시도해 주세요.'); return false; }
+  }
+  async function deleteRecord(name){
+    try { await db.collection('records').doc(name).delete(); return true; }
+    catch(e){ console.error(e); return false; }
+  }
+  async function ensureStudent(name){
+    let list = await loadStudents();
+    if(!list.includes(name)){
+      list.push(name);
+      await saveStudents(list);
+    }
+    state.students = list;
+  }
+  async function loadConfig(){
+    try {
+      const doc = await db.collection('meta').doc('config').get();
+      state.config = doc.exists ? { ...DEFAULT_CONFIG, ...doc.data() } : { ...DEFAULT_CONFIG };
+    } catch(e){ state.config = { ...DEFAULT_CONFIG }; }
+  }
+  async function saveConfig(c){
+    state.config = c;
+    try { await db.collection('meta').doc('config').set(c); return true; }
+    catch(e){ console.error(e); toast('설정 저장에 실패했어요.'); return false; }
+  }
+
+  // ---------- Excel download ----------
+  function downloadAllRecordsExcel(){
+    const students = state.teacherStudents || [];
+    if(!students.length){ toast('다운로드할 학생 기록이 없어요.'); return; }
+
+    let rows = [];
+    students.forEach(s => {
+      s.record.entries.sort((a,b)=>a.createdAt-b.createdAt).forEach(e => {
+        const typeName = e.type==='daily' ? sectionLabel('daily') : (e.type==='book' ? sectionLabel('book') : sectionLabel('free'));
+        const title = e.type==='daily' ? (e.bookTitle||'') : (e.title||'');
+        const body = e.type==='daily' ? (e.note||'') : (e.type==='book' ? (e.review||'') : (e.content||''));
+        const fb = e.feedback ? e.feedback.text : '';
+        const fbDate = e.feedback ? fmtDateFull(e.feedback.at) : '';
+        const extra = e.type==='daily' ? (e.pagesRead||'') : (e.type==='book' ? `${e.author||''} / ${'★'.repeat(e.rating||0)}${'☆'.repeat(5-(e.rating||0))}` : '');
+        const revCount = (e.revisions && e.revisions.length) || 0;
+        rows.push({ name: s.name, type: typeName, date: fmtDateFull(e.date), title, extra, body, fb, fbDate, revCount });
+      });
+    });
+
+    const xmlHead = '<?xml version="1.0" encoding="UTF-8"?>\n<?mso-application progid="Excel.Sheet"?>\n';
+    const ssOpen = '<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet" xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet">\n<Styles><Style ss:ID="h"><Font ss:Bold="1" ss:Size="11"/><Interior ss:Color="#DCE6DA" ss:Pattern="Solid"/></Style></Styles>\n<Worksheet ss:Name="전체기록"><Table>\n';
+    const ssClose = '</Table></Worksheet></Workbook>';
+    const cell = (v) => `<Cell><Data ss:Type="String">${esc(v)}</Data></Cell>`;
+    const headerRow = '<Row ss:StyleID="h">' + ['학생이름','유형','날짜','제목','추가정보','내용','피드백','피드백날짜','수정횟수'].map(h=>cell(h)).join('') + '</Row>\n';
+    const dataRows = rows.map(r => '<Row>' + [r.name, r.type, r.date, r.title, r.extra, r.body, r.fb, r.fbDate, String(r.revCount)].map(v=>cell(v)).join('') + '</Row>\n').join('');
+
+    const xml = xmlHead + ssOpen + headerRow + dataRows + ssClose;
+    const blob = new Blob([xml], { type: 'application/vnd.ms-excel;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `GA_읽다잇다_전체기록_${todayStr()}.xls`;
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(()=>{ URL.revokeObjectURL(url); a.remove(); }, 100);
+    toast('엑셀 파일을 다운로드했어요.');
+  }
+
+  // ---------- render root ----------
+  function render(){
+    applyTheme();
+    if(state.role === null) return renderLanding();
+    if(state.role === 'student' && !state.studentName) return renderStudentGate();
+    if(state.role === 'student') return renderStudentApp();
+    if(state.role === 'teacher' && state.teacherView === 'list') return renderTeacherList();
+    if(state.role === 'teacher' && state.teacherView === 'detail') return renderTeacherDetail();
+    if(state.role === 'teacher' && state.teacherView === 'settings') return renderTeacherSettings();
+  }
+
+  function topbar(rightHtml){
+    return `
+      <div class="topbar">
+        <div class="brand"><div class="mark">GA</div><div class="name">읽다, 잇다</div></div>
+        <div class="who">${rightHtml}</div>
+      </div>`;
+  }
+
+  // ---------- landing ----------
+  function renderLanding(){
+    shell.innerHTML = `
+      <div class="landing">
+        <div class="landing-inner">
+          <div class="landing-title serif">GA 읽다, 잇다</div>
+          <div class="landing-sub">매일 읽고(읽다), 다 읽은 책을 잇고(잇다), 나의 글을 짓는(짓다) 기록을 선생님과 나누는 공간이에요.</div>
+          <div class="role-grid">
+            <div class="role-card" id="pick-student">
+              <div class="tab"></div>
+              <div class="icon">📖</div>
+              <h3 class="serif">학생으로 시작하기</h3>
+              <p>오늘 읽은 책을 기록하고, 완독한 책을 정리하고, 매주 자유롭게 글을 써 보세요.</p>
+            </div>
+            <div class="role-card teacher" id="pick-teacher">
+              <div class="tab"></div>
+              <div class="icon">🖋️</div>
+              <h3 class="serif">선생님으로 시작하기</h3>
+              <p>학생들의 기록을 살펴보고, 글마다 짧은 피드백을 남겨 주세요.</p>
+            </div>
+          </div>
+        </div>
+      </div>`;
+    document.getElementById('pick-student').onclick = () => { state.role='student'; render(); };
+    document.getElementById('pick-teacher').onclick = () => { state.role='teacher-gate'; renderTeacherGate(); };
+  }
+
+  // ---------- teacher password gate ----------
+  function renderTeacherGate(){
+    shell.innerHTML = `
+      ${topbar(`<button id="home">처음으로</button>`)}
+      <div class="container">
+        <div class="gate">
+          <h2 class="serif">선생님 로그인</h2>
+          <p class="hint">관리자 비밀번호를 입력해 주세요.</p>
+          <div class="field">
+            <label>비밀번호</label>
+            <input id="pw" type="password" placeholder="비밀번호 입력" maxlength="20" />
+          </div>
+          <div id="pw-err"></div>
+          <button class="btn btn-primary btn-block" id="pw-go">로그인</button>
+        </div>
+      </div>`;
+    document.getElementById('home').onclick = () => { state.role=null; render(); };
+    const pw = document.getElementById('pw');
+    pw.focus();
+    const submit = async () => {
+      await loadConfig();
+      const correct = cfg().password || '0000';
+      if(pw.value === correct){
+        state.role = 'teacher';
+        state.teacherView = 'list';
+        render();
+        loadTeacherList();
+      } else {
+        document.getElementById('pw-err').innerHTML = '<div class="pw-error">비밀번호가 틀렸어요.</div>';
+        pw.value = '';
+        pw.focus();
+      }
+    };
+    document.getElementById('pw-go').onclick = submit;
+    pw.addEventListener('keydown', e => { if(e.key==='Enter') submit(); });
+  }
+
+  // ---------- student gate ----------
+  function renderStudentGate(){
+    shell.innerHTML = `
+      ${topbar(`<button id="home">처음으로</button>`)}
+      <div class="container">
+        <div class="gate">
+          <h2 class="serif">이름을 알려주세요</h2>
+          <p class="hint">처음이라면 이름을 입력해 새 기록장을 만들고, 이미 쓰고 있었다면 같은 이름을 입력해 이어서 써요.</p>
+          <div class="field">
+            <label>이름</label>
+            <input id="nm" type="text" placeholder="예: 김민준" maxlength="20" />
+          </div>
+          <button class="btn btn-primary btn-block" id="go">기록장 열기</button>
+        </div>
+      </div>`;
+    document.getElementById('home').onclick = () => { state.role=null; render(); };
+    const nm = document.getElementById('nm');
+    nm.focus();
+    const submit = async () => {
+      const v = nm.value.trim();
+      if(!v){ toast('이름을 입력해 주세요.'); return; }
+      state.loading = true;
+      await loadConfig();
+      await ensureStudent(v);
+      state.studentName = v;
+      state.record = await loadRecord(v);
+      state.tab = cfg().sections[0]?.key || 'daily';
+      render();
+    };
+    document.getElementById('go').onclick = submit;
+    nm.addEventListener('keydown', e => { if(e.key==='Enter') submit(); });
+  }
+
+  // ---------- student app ----------
+  function tabsHtml(){
+    const sections = cfg().sections;
+    return `<div class="tabbar">${sections.map(s=>
+      `<button class="tabbtn ${state.tab===s.key?'active':''}" data-tab="${s.key}" style="${state.tab===s.key?`background:${s.color};`:''}">${esc(s.label)}</button>`
+    ).join('')}</div>`;
+  }
+
+  function renderStudentApp(){
+    shell.innerHTML = `
+      ${topbar(`<span>${esc(state.studentName)}님</span><button id="switch-name">이름 바꾸기</button><button id="home">처음으로</button>`)}
+      <div class="container">
+        ${tabsHtml()}
+        <div class="panel" id="panel"></div>
+      </div>`;
+    document.getElementById('home').onclick = () => { state.role=null; state.studentName=null; render(); };
+    document.getElementById('switch-name').onclick = () => { state.studentName=null; state.record=null; render(); };
+    shell.querySelectorAll('.tabbtn').forEach(b=>{
+      b.onclick = () => { state.tab = b.dataset.tab; render(); };
+    });
+    const panel = document.getElementById('panel');
+    if(state.tab==='daily') renderDailyTab(panel);
+    else if(state.tab==='stickers') renderStickersTab(panel);
+    else if(state.tab==='book') renderBookTab(panel);
+    else if(state.tab==='free') renderFreeTab(panel);
+    else renderMineTab(panel);
+  }
+
+  function entryBadge(type){
+    const lbl = sectionLabel(type==='daily'?'daily':(type==='book'?'book':'free'));
+    if(type==='daily') return `<span class="badge badge-daily">${esc(lbl)}</span>`;
+    if(type==='book') return `<span class="badge badge-book">${esc(lbl)}</span>`;
+    return `<span class="badge badge-free">${esc(lbl)}</span>`;
+  }
+  function feedbackHtml(entry){
+    if(!entry.feedback) return '';
+    return `<div class="sticky"><b>선생님 피드백</b> · ${fmtDate(entry.feedback.at)}<br/>${esc(entry.feedback.text)}</div>`;
+  }
+
+  function renderDailyTab(panel){
+    const todays = state.record.entries.filter(e=>e.type==='daily').sort((a,b)=> b.createdAt-a.createdAt);
+    panel.innerHTML = `
+      <div class="section-title serif">${esc(sectionLabel('daily'))} · 오늘의 독서기록</div>
+      <div class="section-desc">오늘 읽은 책과 짧은 생각을 남겨 보세요. 매일 조금씩 쌓이면 훌륭한 기록이 돼요.</div>
+      <div class="row2">
+        <div class="field"><label>책 제목</label><input id="d-title" placeholder="예: 나니아 연대기"/></div>
+        <div class="field"><label>오늘 읽은 범위</label><input id="d-pages" placeholder="예: 45~68쪽"/></div>
+      </div>
+      <div class="field"><label>오늘의 한 줄 생각</label><textarea id="d-note" placeholder="가장 인상 깊었던 장면이나 느낀 점을 자유롭게 써 보세요."></textarea></div>
+      <button class="btn btn-primary" id="d-save">오늘 기록 저장</button>
+      <div class="divider"></div>
+      <div class="section-title serif" style="font-size:15px;">최근 기록</div>
+      ${todays.length ? `<div class="entry-list">${todays.slice(0,6).map(e=>`
+        <div class="entry type-daily">
+          <div class="entry-top"><span class="entry-title">${esc(e.bookTitle)}</span><span class="entry-date">${fmtDate(e.date)}</span></div>
+          <div class="entry-meta">읽은 범위: ${esc(e.pagesRead||'-')}</div>
+          <div class="entry-body">${esc(e.note)}</div>
+          ${revisionsHtml(e)}
+          ${feedbackHtml(e)}
+        </div>`).join('')}</div>` : `<div class="empty"><div class="big">🗒️</div>아직 기록이 없어요. 오늘부터 시작해 볼까요?</div>`}
+    `;
+    bindRevisionToggles(panel);
+    document.getElementById('d-save').onclick = async () => {
+      if(saving) return;
+      const btn = document.getElementById('d-save');
+      const title = document.getElementById('d-title').value.trim();
+      const note = document.getElementById('d-note').value.trim();
+      const pages = document.getElementById('d-pages').value.trim();
+      if(!title || !note){ toast('책 제목과 오늘의 생각을 입력해 주세요.'); return; }
+      const dup = state.record.entries.find(e=> e.type==='daily' && e.date===todayStr() && e.bookTitle===title && e.note===note);
+      if(dup){ toast('이미 같은 내용의 기록이 있어요.'); return; }
+      saving = true;
+      btnSaving(btn);
+      state.record.entries.push({ id:uid(), type:'daily', date:todayStr(), createdAt:Date.now(), bookTitle:title, pagesRead:pages, note, feedback:null });
+      const ok = await saveRecord(state.studentName, state.record);
+      saving = false;
+      if(ok){ btnDone(btn); toast('오늘의 기록을 저장했어요.'); setTimeout(()=>render(), 1200); }
+      else { btnReset(btn); state.record.entries.pop(); }
+    };
+  }
+
+  function renderStickersTab(panel){
+    if(!state.stickerMonth) state.stickerMonth = monthKey(todayStr());
+    const stats = calendarStats(state.record, state.stickerMonth);
+    panel.innerHTML = `
+      <div class="section-title serif">${esc(sectionLabel('stickers'))} · 이번 달 스티커판</div>
+      <div class="section-desc">오늘의 독서기록을 쓴 날마다 스티커⭐가 붙어요. 한 달을 빠짐없이 채우면 선생님께 선물을 받을 수 있어요!</div>
+      ${calendarHtml(stats, 'cal')}
+    `;
+    document.getElementById('cal-prev').onclick = () => { state.stickerMonth = shiftMonth(state.stickerMonth,-1); renderStickersTab(panel); };
+    document.getElementById('cal-next').onclick = () => { state.stickerMonth = shiftMonth(state.stickerMonth,1); renderStickersTab(panel); };
+  }
+
+  function renderBookTab(panel){
+    const books = state.record.entries.filter(e=>e.type==='book').sort((a,b)=> b.createdAt-a.createdAt);
+    panel.innerHTML = `
+      <div class="section-title serif">${esc(sectionLabel('book'))} · 완독 기록장</div>
+      <div class="section-desc">책을 다 읽었다면 이곳에 정리해 보세요.</div>
+      <div class="row2">
+        <div class="field"><label>책 제목</label><input id="b-title" placeholder="예: 오디세이아"/></div>
+        <div class="field"><label>지은이</label><input id="b-author" placeholder="예: 호메로스"/></div>
+      </div>
+      <div class="row2">
+        <div class="field"><label>읽기 시작한 날</label><input id="b-start" type="date"/></div>
+        <div class="field"><label>다 읽은 날</label><input id="b-end" type="date" value="${todayStr()}"/></div>
+      </div>
+      <div class="field"><label>별점</label><div class="star-picker" id="b-stars">${[1,2,3,4,5].map(n=>`<span data-n="${n}">★</span>`).join('')}</div></div>
+      <div class="field"><label>기억나는 문장</label><textarea id="b-quote" placeholder="책에서 가장 마음에 남은 문장을 그대로 옮겨 적어 보세요." style="min-height:60px;"></textarea></div>
+      <div class="field"><label>전체 감상</label><textarea id="b-review" placeholder="어떤 이야기였는지, 무엇을 느꼈는지 자유롭게 써 보세요." style="min-height:120px;"></textarea></div>
+      <button class="btn btn-primary" id="b-save">완독 기록 저장</button>
+      <div class="divider"></div>
+      <div class="section-title serif" style="font-size:15px;">읽은 책들</div>
+      ${books.length ? `<div class="entry-list">${books.map(e=>`
+        <div class="entry type-book">
+          <div class="entry-top"><span class="entry-title">${esc(e.title)} <span style="color:var(--ink-soft); font-weight:400;">· ${esc(e.author||'')}</span></span><span class="entry-date">${fmtDate(e.startDate)} ~ ${fmtDate(e.endDate)}</span></div>
+          <div class="entry-meta"><span class="stars">${'★'.repeat(e.rating||0)}${'☆'.repeat(5-(e.rating||0))}</span></div>
+          ${e.quote ? `<div class="quote-block">"${esc(e.quote)}"</div>` : ''}
+          <div class="entry-body">${esc(e.review)}</div>
+          ${revisionsHtml(e)}
+          ${feedbackHtml(e)}
+        </div>`).join('')}</div>` : `<div class="empty"><div class="big">📚</div>아직 완독한 책이 없어요.</div>`}
+    `;
+    bindRevisionToggles(panel);
+    let rating = 0;
+    const stars = panel.querySelectorAll('#b-stars span');
+    stars.forEach(s=>{
+      s.onclick = () => { rating = parseInt(s.dataset.n); stars.forEach(x=>x.classList.toggle('on', parseInt(x.dataset.n)<=rating)); };
+    });
+    document.getElementById('b-save').onclick = async () => {
+      if(saving) return;
+      const btn = document.getElementById('b-save');
+      const title = document.getElementById('b-title').value.trim();
+      const author = document.getElementById('b-author').value.trim();
+      const start = document.getElementById('b-start').value;
+      const end = document.getElementById('b-end').value;
+      const quote = document.getElementById('b-quote').value.trim();
+      const review = document.getElementById('b-review').value.trim();
+      if(!title || !review){ toast('책 제목과 감상을 입력해 주세요.'); return; }
+      const dup = state.record.entries.find(e=> e.type==='book' && e.title===title && e.review===review);
+      if(dup){ toast('이미 같은 내용의 기록이 있어요.'); return; }
+      saving = true;
+      btnSaving(btn);
+      state.record.entries.push({ id:uid(), type:'book', date:end||todayStr(), createdAt:Date.now(), title, author, startDate:start, endDate:end, quote, review, rating, feedback:null });
+      const ok = await saveRecord(state.studentName, state.record);
+      saving = false;
+      if(ok){ btnDone(btn); toast('완독 기록을 저장했어요.'); setTimeout(()=>render(), 1200); }
+      else { btnReset(btn); state.record.entries.pop(); }
+    };
+  }
+
+  function renderFreeTab(panel){
+    const wk = getWeekKey(todayStr());
+    const frees = state.record.entries.filter(e=>e.type==='free').sort((a,b)=> b.createdAt-a.createdAt);
+    const thisWeek = frees.find(e=>e.weekKey===wk);
+    panel.innerHTML = `
+      <div class="section-title serif">${esc(sectionLabel('free'))} · 이번 주 글쓰기</div>
+      <div class="section-desc">일주일에 한 편, 주제 제한 없이 자유롭게 써 보세요.</div>
+      <div class="weeklock">${thisWeek ? '✅ 이번 주 글을 이미 썼어요. 아래에서 수정할 수 있어요.' : '✏️ 이번 주 글을 아직 쓰지 않았어요.'}</div>
+      <div class="field"><label>제목</label><input id="f-title" value="${esc(thisWeek?.title||'')}" placeholder="글의 제목을 지어 주세요"/></div>
+      <div class="field"><label>내용</label><textarea id="f-content" style="min-height:200px;" placeholder="무엇에 대해 써도 좋아요. 이번 주에 있었던 일, 읽은 책에 대한 생각, 상상 이야기...">${esc(thisWeek?.content||'')}</textarea></div>
+      <button class="btn btn-primary" id="f-save">${thisWeek?'수정해서 저장':'이번 주 글쓰기 저장'}</button>
+      <div class="divider"></div>
+      <div class="section-title serif" style="font-size:15px;">지난 글들</div>
+      ${frees.filter(e=>e.weekKey!==wk).length ? `<div class="entry-list">${frees.filter(e=>e.weekKey!==wk).map(e=>`
+        <div class="entry type-free">
+          <div class="entry-top"><span class="entry-title">${esc(e.title)}</span><span class="entry-date">${fmtDate(e.date)}</span></div>
+          <div class="entry-body">${esc(e.content)}</div>
+          ${revisionsHtml(e)}
+          ${feedbackHtml(e)}
+        </div>`).join('')}</div>` : `<div class="empty"><div class="big">✒️</div>지난 글이 아직 없어요.</div>`}
+    `;
+    bindRevisionToggles(panel);
+    document.getElementById('f-save').onclick = async () => {
+      if(saving) return;
+      const btn = document.getElementById('f-save');
+      const title = document.getElementById('f-title').value.trim();
+      const content = document.getElementById('f-content').value.trim();
+      if(!title || !content){ toast('제목과 내용을 입력해 주세요.'); return; }
+      if(thisWeek && thisWeek.title === title && thisWeek.content === content){
+        toast('변경된 내용이 없어요.'); return;
+      }
+      saving = true;
+      btnSaving(btn);
+      if(thisWeek){
+        if(!thisWeek.revisions) thisWeek.revisions = [];
+        thisWeek.revisions.push({ title: thisWeek.title, content: thisWeek.content, date: thisWeek.date, at: Date.now() });
+        thisWeek.title = title; thisWeek.content = content; thisWeek.date = todayStr();
+      } else {
+        state.record.entries.push({ id:uid(), type:'free', date:todayStr(), createdAt:Date.now(), weekKey:wk, title, content, feedback:null });
+      }
+      const ok = await saveRecord(state.studentName, state.record);
+      saving = false;
+      if(ok){ btnDone(btn); toast('이번 주 글을 저장했어요.'); setTimeout(()=>render(), 1200); }
+      else { btnReset(btn); }
+    };
+  }
+
+  function renderMineTab(panel){
+    const all = [...state.record.entries].sort((a,b)=> b.createdAt-a.createdAt);
+    panel.innerHTML = `
+      <div class="section-title serif">${esc(sectionLabel('mine'))} · 나의 기록모음</div>
+      <div class="section-desc">지금까지 쓴 모든 기록을 한눈에 볼 수 있어요. 선생님 피드백은 노란 메모로 표시돼요.</div>
+      ${all.length ? `<div class="entry-list">${all.map(e=>{
+        const title = e.type==='daily'? e.bookTitle : e.title;
+        const body = e.type==='daily'? e.note : (e.type==='book'? e.review : e.content);
+        return `<div class="entry type-${e.type}">
+          <div class="entry-top">${entryBadge(e.type)}<span class="entry-date">${fmtDate(e.date)}</span></div>
+          <div class="entry-title" style="margin-top:6px;">${esc(title)}</div>
+          ${e.type==='book' && e.quote ? `<div class="quote-block">"${esc(e.quote)}"</div>` : ''}
+          <div class="entry-body">${esc(body)}</div>
+          ${revisionsHtml(e)}
+          ${feedbackHtml(e)}
+        </div>`;
+      }).join('')}</div>` : `<div class="empty"><div class="big">📔</div>아직 쌓인 기록이 없어요.</div>`}
+    `;
+    bindRevisionToggles(panel);
+  }
+
+  // ---------- teacher ----------
+  async function loadTeacherList(){
+    state.loading = true;
+    await loadConfig();
+    const names = await loadStudents();
+    const recs = await Promise.all(names.map(n=>loadRecord(n)));
+    state.teacherStudents = names.map((n,i)=>({ name:n, record:recs[i] }));
+    state.loading = false;
+    if(state.role==='teacher' && state.teacherView==='list') renderTeacherList();
+  }
+
+  function teacherTopbar(){
+    return topbar(`<button id="t-settings">관리자 설정</button><button id="home">처음으로</button>`);
+  }
+
+  function renderTeacherList(){
+    const list = state.teacherStudents;
+    shell.innerHTML = `
+      ${teacherTopbar()}
+      <div class="container">
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:6px;">
+          <div class="section-title serif" style="font-size:20px;margin:0;">학생 기록 살펴보기</div>
+          ${list && list.length ? `<button class="btn btn-ghost" id="dl-excel" style="gap:6px;">📥 전체 기록 내려받기 (Excel)</button>` : ''}
+        </div>
+        <div class="section-desc">학생을 선택하면 모든 기록을 시간순으로 보고 피드백을 남길 수 있어요.</div>
+        ${!list ? `<div class="empty">불러오는 중...</div>` :
+          list.length ? `<div class="stu-grid">${list.map(s=>{
+            const wk = getWeekKey(todayStr());
+            const hasFree = s.record.entries.some(e=>e.type==='free' && e.weekKey===wk);
+            const lastDaily = s.record.entries.filter(e=>e.type==='daily').sort((a,b)=>b.createdAt-a.createdAt)[0];
+            const totalEntries = s.record.entries.length;
+            const needFeedback = s.record.entries.filter(e=>!e.feedback).length;
+            const cs = calendarStats(s.record, monthKey(todayStr()));
+            return `<div class="stu-card" data-name="${esc(s.name)}">
+              <h4>${esc(s.name)}</h4>
+              <div class="stat"><span class="dot ${hasFree?'dot-ok':'dot-warn'}"></span>이번 주 글쓰기 ${hasFree?'제출':'미제출'}</div>
+              <div class="stat">최근 독서기록: ${lastDaily?fmtDate(lastDaily.date):'없음'}</div>
+              <div class="stat">이번 달 스티커 ${cs.got} / ${cs.elapsed}일${cs.elapsed>0 && cs.got===cs.elapsed ? ' ⭐개근중' : ''}</div>
+              <div class="stat">전체 기록 ${totalEntries}개 · 피드백 대기 ${needFeedback}개</div>
+            </div>`;
+          }).join('')}</div>` : `<div class="empty"><div class="big">🧑‍🎓</div>아직 등록된 학생이 없어요.<br/>학생이 먼저 이름으로 기록장을 열면 여기에 나타나요.</div>`}
+      </div>`;
+    document.getElementById('home').onclick = () => { state.role=null; render(); };
+    document.getElementById('t-settings').onclick = () => { state.teacherView='settings'; render(); };
+    const dlBtn = document.getElementById('dl-excel');
+    if(dlBtn) dlBtn.onclick = downloadAllRecordsExcel;
+    shell.querySelectorAll('.stu-card').forEach(c=>{
+      c.onclick = async () => {
+        state.teacherSelected = c.dataset.name;
+        state.record = await loadRecord(state.teacherSelected);
+        state.teacherView = 'detail';
+        render();
+      };
+    });
+  }
+
+  function renderTeacherDetail(){
+    if(!state.teacherStickerMonth) state.teacherStickerMonth = monthKey(todayStr());
+    const all = [...state.record.entries].sort((a,b)=> b.createdAt-a.createdAt);
+    const cs = calendarStats(state.record, state.teacherStickerMonth);
+    shell.innerHTML = `
+      ${teacherTopbar()}
+      <div class="container">
+        <div class="backlink" id="back">← 학생 목록으로</div>
+        <div class="section-title serif" style="font-size:20px;">${esc(state.teacherSelected)}님의 기록</div>
+        <div class="section-desc">각 기록 아래 칸에 피드백을 남기고 저장하세요.</div>
+        <div class="cal-mini-wrap">${calendarHtml(cs, 'tcal')}</div>
+        ${all.length ? `<div class="entry-list">${all.map(e=>{
+          const title = e.type==='daily'? e.bookTitle : e.title;
+          const body = e.type==='daily'? e.note : (e.type==='book'? e.review : e.content);
+          return `<div class="entry type-${e.type}" data-id="${e.id}">
+            <div class="entry-top">${entryBadge(e.type)}<span class="entry-date">${fmtDate(e.date)}</span></div>
+            <div class="entry-title" style="margin-top:6px;">${esc(title)}</div>
+            ${e.type==='book' && e.quote ? `<div class="quote-block">"${esc(e.quote)}"</div>` : ''}
+            <div class="entry-body">${esc(body)}</div>
+            ${revisionsHtml(e)}
+            ${feedbackHtml(e)}
+            <div class="fbform">
+              <textarea placeholder="짧은 피드백을 남겨 주세요." class="fb-input">${e.feedback? esc(e.feedback.text): ''}</textarea>
+              <button class="btn btn-primary fb-save">저장</button>
+            </div>
+          </div>`;
+        }).join('')}</div>` : `<div class="empty"><div class="big">📔</div>아직 이 학생의 기록이 없어요.</div>`}
+      </div>`;
+    document.getElementById('home').onclick = () => { state.role=null; render(); };
+    document.getElementById('t-settings').onclick = () => { state.teacherView='settings'; render(); };
+    document.getElementById('back').onclick = () => { state.teacherView='list'; render(); };
+    document.getElementById('tcal-prev').onclick = () => { state.teacherStickerMonth = shiftMonth(state.teacherStickerMonth,-1); renderTeacherDetail(); };
+    document.getElementById('tcal-next').onclick = () => { state.teacherStickerMonth = shiftMonth(state.teacherStickerMonth,1); renderTeacherDetail(); };
+    bindRevisionToggles(shell);
+    shell.querySelectorAll('.entry').forEach(card=>{
+      const id = card.dataset.id;
+      const fbBtn = card.querySelector('.fb-save');
+      fbBtn.onclick = async () => {
+        if(saving) return;
+        const text = card.querySelector('.fb-input').value.trim();
+        if(!text){ toast('피드백 내용을 입력해 주세요.'); return; }
+        saving = true;
+        btnSaving(fbBtn);
+        const entry = state.record.entries.find(x=>x.id===id);
+        entry.feedback = { text, at: todayStr() };
+        const ok = await saveRecord(state.teacherSelected, state.record);
+        saving = false;
+        if(ok){ btnDone(fbBtn); toast('피드백을 저장했어요.'); setTimeout(()=>render(), 1200); }
+        else { btnReset(fbBtn); }
+      };
+    });
+  }
+
+  // ---------- teacher settings ----------
+  function renderTeacherSettings(){
+    const c = cfg();
+    const students = state.teacherStudents || [];
+    shell.innerHTML = `
+      ${teacherTopbar()}
+      <div class="container">
+        <div class="backlink" id="back">← 학생 목록으로</div>
+        <div class="section-title serif" style="font-size:20px;">관리자 설정</div>
+        <div class="section-desc">비밀번호, 섹션, 테마, 학생을 관리할 수 있어요.</div>
+
+        <div class="setting-card">
+          <h3>비밀번호 변경</h3>
+          <div class="row2">
+            <div class="field"><label>현재 비밀번호</label><input id="s-pw-cur" type="password" placeholder="현재 비밀번호"/></div>
+            <div class="field"><label>새 비밀번호</label><input id="s-pw-new" type="password" placeholder="새 비밀번호"/></div>
+          </div>
+          <button class="btn btn-primary btn-sm" id="s-pw-save">비밀번호 변경</button>
+        </div>
+
+        <div class="setting-card">
+          <h3>테마 색상</h3>
+          <div class="color-row">
+            <label>메인 색상</label>
+            <input type="color" id="s-theme-color" value="${c.themeColor || '#2F5D4E'}"/>
+            <span style="font-size:12px;color:var(--ink-soft);">탭, 버튼 등의 기본 색상</span>
+          </div>
+          <button class="btn btn-primary btn-sm" id="s-theme-save">테마 저장</button>
+        </div>
+
+        <div class="setting-card">
+          <h3>섹션 이름 · 색상 · 순서</h3>
+          <div class="section-desc">이름과 색상을 수정하고, 화살표로 순서를 바꿀 수 있어요.</div>
+          <div id="s-sections">
+            ${c.sections.map((s,i)=>`
+              <div class="sort-item" data-idx="${i}">
+                <span class="handle">☰</span>
+                <input class="sort-label" value="${esc(s.label)}" data-key="${s.key}" style="border:1px solid var(--paper-line);border-radius:6px;padding:4px 8px;font-size:13.5px;font-family:'Noto Sans KR',sans-serif;"/>
+                <input type="color" value="${s.color}" class="sort-color" style="width:32px;height:26px;border:1px solid var(--paper-line);border-radius:4px;padding:1px;cursor:pointer;"/>
+                <button class="btn btn-ghost btn-sm sort-up" ${i===0?'disabled':''}>▲</button>
+                <button class="btn btn-ghost btn-sm sort-down" ${i===c.sections.length-1?'disabled':''}>▼</button>
+              </div>
+            `).join('')}
+          </div>
+          <button class="btn btn-primary btn-sm" id="s-sections-save" style="margin-top:10px;">섹션 설정 저장</button>
+        </div>
+
+        <div class="setting-card">
+          <h3>학생 관리</h3>
+          <div class="section-desc">등록된 학생 목록입니다. 삭제하면 해당 학생의 모든 기록이 함께 삭제됩니다.</div>
+          <div id="s-students">
+            ${students.length ? students.map(s=>`
+              <div class="stu-manage">
+                <div>
+                  <div class="nm">${esc(s.name)}</div>
+                  <div class="info">기록 ${s.record.entries.length}개</div>
+                </div>
+                <button class="btn btn-danger btn-sm stu-del" data-name="${esc(s.name)}">삭제</button>
+              </div>
+            `).join('') : `<div class="empty" style="padding:20px;"><div class="big">🧑‍🎓</div>등록된 학생이 없어요.</div>`}
+          </div>
+        </div>
+      </div>`;
+
+    document.getElementById('home').onclick = () => { state.role=null; render(); };
+    document.getElementById('t-settings').onclick = () => {};
+    document.getElementById('back').onclick = () => { state.teacherView='list'; render(); };
+
+    document.getElementById('s-pw-save').onclick = async () => {
+      const cur = document.getElementById('s-pw-cur').value;
+      const nw = document.getElementById('s-pw-new').value;
+      if(cur !== c.password){ toast('현재 비밀번호가 틀렸어요.'); return; }
+      if(!nw || nw.length < 1){ toast('새 비밀번호를 입력해 주세요.'); return; }
+      c.password = nw;
+      const ok = await saveConfig(c);
+      if(ok) toast('비밀번호가 변경되었어요.');
+    };
+
+    document.getElementById('s-theme-save').onclick = async () => {
+      c.themeColor = document.getElementById('s-theme-color').value;
+      const ok = await saveConfig(c);
+      if(ok){ toast('테마가 저장되었어요.'); applyTheme(); }
+    };
+
+    shell.querySelectorAll('.sort-up').forEach(btn=>{
+      btn.onclick = () => {
+        const item = btn.closest('.sort-item');
+        const idx = parseInt(item.dataset.idx);
+        if(idx > 0){
+          [c.sections[idx-1], c.sections[idx]] = [c.sections[idx], c.sections[idx-1]];
+          renderTeacherSettings();
+        }
+      };
+    });
+    shell.querySelectorAll('.sort-down').forEach(btn=>{
+      btn.onclick = () => {
+        const item = btn.closest('.sort-item');
+        const idx = parseInt(item.dataset.idx);
+        if(idx < c.sections.length-1){
+          [c.sections[idx], c.sections[idx+1]] = [c.sections[idx+1], c.sections[idx]];
+          renderTeacherSettings();
+        }
+      };
+    });
+
+    document.getElementById('s-sections-save').onclick = async () => {
+      const items = shell.querySelectorAll('.sort-item');
+      items.forEach((item, i) => {
+        const label = item.querySelector('.sort-label').value.trim();
+        const color = item.querySelector('.sort-color').value;
+        if(label) c.sections[i].label = label;
+        c.sections[i].color = color;
+      });
+      const ok = await saveConfig(c);
+      if(ok) toast('섹션 설정이 저장되었어요.');
+    };
+
+    shell.querySelectorAll('.stu-del').forEach(btn=>{
+      btn.onclick = async () => {
+        const name = btn.dataset.name;
+        if(!confirm(`"${name}" 학생의 모든 기록을 삭제하시겠어요?\n이 작업은 되돌릴 수 없습니다.`)) return;
+        let list = await loadStudents();
+        list = list.filter(n=>n!==name);
+        await saveStudents(list);
+        await deleteRecord(name);
+        toast(`${name} 학생을 삭제했어요.`);
+        await loadTeacherList();
+        state.teacherView = 'settings';
+        render();
+      };
+    });
+  }
+
+  // ---------- init ----------
+  (async () => {
+    await loadConfig();
+    render();
+  })();
+})();
+</script>
+</body>
+</html>
