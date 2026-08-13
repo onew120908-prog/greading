@@ -267,6 +267,28 @@
   .entry-date { font-size: 12px; color: var(--ink-soft); white-space: nowrap; }
   .entry-meta { font-size: 12.5px; color: var(--ink-soft); margin-top: 2px; }
   .entry-body { font-size: 14px; line-height: 1.65; margin-top: 8px; white-space: pre-wrap; }
+  /* ===== 쓰다 탭 ===== */
+  .memo-new-btn { display: flex; align-items: center; gap: 8px; padding: 14px 16px; background: var(--card); border: 1.5px dashed var(--forest); border-radius: 10px; color: var(--forest); font-size: 14px; font-weight: 700; cursor: pointer; width: 100%; margin-bottom: 18px; transition: background .15s; }
+  .memo-new-btn:hover { background: var(--sage); }
+  .memo-card { background: var(--card); border-radius: 10px; box-shadow: var(--shadow); margin-bottom: 12px; overflow: hidden; }
+  .memo-card-head { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; cursor: pointer; }
+  .memo-card-date { font-size: 12px; color: var(--ink-soft); font-family: 'Noto Serif KR', serif; }
+  .memo-card-preview { font-size: 13.5px; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 55%; }
+  .memo-card-actions { display: flex; gap: 6px; }
+  .memo-btn { font-size: 12px; padding: 4px 10px; border-radius: 6px; border: none; cursor: pointer; font-weight: 600; }
+  .memo-btn-edit { background: var(--sage); color: var(--forest-dark); }
+  .memo-btn-del  { background: var(--clay-soft); color: var(--clay); }
+  .memo-body { padding: 0 16px 16px; border-top: 1px solid var(--paper-line); }
+  .memo-body.hidden { display: none; }
+  .memo-content-view { font-size: 14px; line-height: 1.75; white-space: pre-wrap; color: var(--ink); padding-top: 14px; }
+  .memo-editor { width: 100%; margin-top: 12px; min-height: 160px; background: #FDFAF4; border: 1.5px solid var(--paper-line); border-radius: 8px; padding: 12px; font-size: 14px; line-height: 1.75; resize: vertical; font-family: 'Noto Sans KR', sans-serif; color: var(--ink); box-sizing: border-box; }
+  .memo-editor:focus { outline: none; border-color: var(--forest); }
+  .memo-save-row { display: flex; justify-content: flex-end; gap: 8px; margin-top: 10px; }
+  .memo-compose { background: var(--card); border-radius: 10px; box-shadow: var(--shadow); padding: 16px; margin-bottom: 18px; }
+  .memo-compose textarea { width: 100%; min-height: 140px; background: #FDFAF4; border: 1.5px solid var(--paper-line); border-radius: 8px; padding: 12px; font-size: 14px; line-height: 1.75; resize: vertical; font-family: 'Noto Sans KR', sans-serif; color: var(--ink); box-sizing: border-box; }
+  .memo-compose textarea:focus { outline: none; border-color: var(--forest); }
+  .memo-compose-label { font-size: 12px; color: var(--ink-soft); margin-bottom: 8px; }
+
   .badge { display: inline-block; font-size: 11px; padding: 2px 8px; border-radius: 999px; font-weight: 700; }
   .badge-daily { background: var(--sage); color: var(--forest-dark); }
   .badge-book { background: var(--gold-soft); color: #7A5A16; }
@@ -441,6 +463,7 @@ const db = firebase.firestore();
       { key: 'stickers', label: '쌓다', color: '#B4862B' },
       { key: 'book', label: '잇다', color: '#B4862B' },
       { key: 'free', label: '짓다', color: '#5B7A9E' },
+      { key: 'memo', label: '쓰다', color: '#7A5C3E' },
       { key: 'mine', label: '담다', color: '#6B6152' },
     ],
     themeColor: '#2F5D4E',
@@ -824,6 +847,7 @@ const db = firebase.firestore();
     else if(state.tab==='stickers') renderStickersTab(panel);
     else if(state.tab==='book') renderBookTab(panel);
     else if(state.tab==='free') renderFreeTab(panel);
+    else if(state.tab==='memo') renderMemoTab(panel);
     else renderMineTab(panel);
   }
 
@@ -994,6 +1018,127 @@ const db = firebase.firestore();
       if(ok){ btnDone(btn); toast('이번 주 글을 저장했어요.'); setTimeout(()=>render(), 1200); }
       else { btnReset(btn); }
     };
+  }
+
+  function renderMemoTab(panel){
+    const memos = state.record.entries.filter(e=>e.type==='memo').sort((a,b)=>b.createdAt-a.createdAt);
+    panel.innerHTML = `
+      <div class="section-title serif">쓰다 · 일상 메모</div>
+      <div class="section-desc">순간순간의 생각과 일상을 자유롭게 기록해요. 언제든 수정할 수 있어요.</div>
+      <div id="memo-compose-area">
+        <div class="memo-compose">
+          <div class="memo-compose-label">✏️ 오늘 ${fmtDate(todayStr())} — 새 메모 작성</div>
+          <textarea id="memo-new-content" placeholder="지금 이 순간을 기록해 보세요..."></textarea>
+          <div class="memo-save-row">
+            <button class="btn btn-primary" id="memo-new-save" style="font-size:13px;padding:8px 18px;">저장</button>
+          </div>
+        </div>
+      </div>
+      <div id="memo-list">
+        ${memos.length ? memos.map((m,i)=>`
+          <div class="memo-card" id="mcard-${m.id}">
+            <div class="memo-card-head" data-id="${m.id}">
+              <span class="memo-card-date">${fmtDateFull(m.date)}${m.updatedAt ? ' · 수정됨' : ''}</span>
+              <span class="memo-card-preview">${esc(m.content.replace(/\n/g,' '))}</span>
+              <div class="memo-card-actions">
+                <button class="memo-btn memo-btn-edit" data-id="${m.id}">수정</button>
+                <button class="memo-btn memo-btn-del" data-id="${m.id}">삭제</button>
+              </div>
+            </div>
+            <div class="memo-body hidden" id="mbody-${m.id}">
+              <div class="memo-content-view" id="mview-${m.id}">${esc(m.content)}</div>
+              <textarea class="memo-editor hidden" id="medit-${m.id}">${esc(m.content)}</textarea>
+              <div class="memo-save-row hidden" id="msave-${m.id}">
+                <button class="memo-btn" style="background:var(--paper-line);color:var(--ink-soft);" data-cancel="${m.id}">취소</button>
+                <button class="btn btn-primary memo-btn" style="font-size:13px;padding:6px 16px;" data-save="${m.id}">저장</button>
+              </div>
+            </div>
+          </div>`).join('') : `<div class="empty"><div class="big">📝</div>아직 메모가 없어요.<br>첫 번째 순간을 기록해 보세요.</div>`}
+      </div>
+    `;
+
+    // 새 메모 저장
+    document.getElementById('memo-new-save').onclick = async () => {
+      if(saving) return;
+      const content = document.getElementById('memo-new-content').value.trim();
+      if(!content){ toast('내용을 입력해 주세요.'); return; }
+      const btn = document.getElementById('memo-new-save');
+      saving = true; btnSaving(btn);
+      state.record.entries.push({ id:uid(), type:'memo', date:todayStr(), createdAt:Date.now(), content });
+      const ok = await saveRecord(state.studentName, state.record);
+      saving = false;
+      if(ok){ btnDone(btn); toast('메모를 저장했어요.'); setTimeout(()=>render(), 1000); }
+      else { btnReset(btn); state.record.entries.pop(); }
+    };
+
+    // 카드 헤더 클릭 → 본문 토글
+    panel.querySelectorAll('.memo-card-head').forEach(h=>{
+      h.onclick = (e)=>{
+        if(e.target.closest('button')) return;
+        const id = h.dataset.id;
+        const body = document.getElementById('mbody-'+id);
+        body.classList.toggle('hidden');
+      };
+    });
+
+    // 수정 버튼
+    panel.querySelectorAll('.memo-btn-edit').forEach(btn=>{
+      btn.onclick = ()=>{
+        const id = btn.dataset.id;
+        document.getElementById('mbody-'+id).classList.remove('hidden');
+        document.getElementById('mview-'+id).classList.add('hidden');
+        document.getElementById('medit-'+id).classList.remove('hidden');
+        document.getElementById('msave-'+id).classList.remove('hidden');
+        document.getElementById('medit-'+id).focus();
+      };
+    });
+
+    // 취소 버튼
+    panel.querySelectorAll('[data-cancel]').forEach(btn=>{
+      btn.onclick = ()=>{
+        const id = btn.dataset.cancel;
+        const orig = state.record.entries.find(e=>e.id===id);
+        document.getElementById('medit-'+id).value = orig?.content||'';
+        document.getElementById('mview-'+id).classList.remove('hidden');
+        document.getElementById('medit-'+id).classList.add('hidden');
+        document.getElementById('msave-'+id).classList.add('hidden');
+      };
+    });
+
+    // 저장 버튼 (수정)
+    panel.querySelectorAll('[data-save]').forEach(btn=>{
+      btn.onclick = async ()=>{
+        if(saving) return;
+        const id = btn.dataset.save;
+        const content = document.getElementById('medit-'+id).value.trim();
+        if(!content){ toast('내용을 입력해 주세요.'); return; }
+        const entry = state.record.entries.find(e=>e.id===id);
+        if(!entry){ return; }
+        if(entry.content === content){ toast('변경된 내용이 없어요.'); return; }
+        saving = true; btnSaving(btn);
+        entry.content = content;
+        entry.updatedAt = Date.now();
+        const ok = await saveRecord(state.studentName, state.record);
+        saving = false;
+        if(ok){ btnDone(btn); toast('메모를 수정했어요.'); setTimeout(()=>render(), 1000); }
+        else { btnReset(btn); }
+      };
+    });
+
+    // 삭제 버튼
+    panel.querySelectorAll('.memo-btn-del').forEach(btn=>{
+      btn.onclick = async ()=>{
+        if(saving) return;
+        if(!confirm('이 메모를 삭제할까요?')) return;
+        const id = btn.dataset.id;
+        saving = true;
+        state.record.entries = state.record.entries.filter(e=>e.id!==id);
+        const ok = await saveRecord(state.studentName, state.record);
+        saving = false;
+        if(ok){ toast('메모를 삭제했어요.'); render(); }
+        else { state.record.entries.push(state.record.entries.find(e=>e.id===id)); }
+      };
+    });
   }
 
   function renderMineTab(panel){
