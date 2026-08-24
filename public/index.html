@@ -207,15 +207,7 @@
     border-radius: 16px; padding: 32px 28px; box-shadow: var(--shadow); }
   .gate h2 { font-family: 'Noto Serif KR', serif; margin: 0 0 6px; font-size: 22px; }
   .gate p.hint { color: var(--ink-soft); font-size: 13.5px; margin: 0 0 20px; }
-  .pin-row { display: flex; gap: 10px; justify-content: center; margin: 18px 0 6px; }
-  .pin-row input {
-    width: 52px; height: 60px; text-align: center; font-size: 24px; font-weight: 700;
-    border: 2px solid var(--paper-line); border-radius: 12px; background: #fff;
-    color: var(--ink); font-family: 'Noto Sans KR', sans-serif; caret-color: transparent;
-  }
-  .pin-row input:focus { outline: none; border-color: var(--forest); background: var(--sage); }
-  .pin-err { color: var(--clay); font-size: 13px; text-align: center; min-height: 18px; margin-bottom: 10px; }
-  .field { margin-bottom: 14px; }
+.field { margin-bottom: 14px; }
   .field label { display: block; font-size: 12.5px; color: var(--ink-soft); margin-bottom: 6px; font-weight: 500; }
   .field input, .field textarea, .field select {
     width: 100%; border: 1px solid var(--paper-line); background: #fff; border-radius: 10px;
@@ -806,133 +798,33 @@ const db = firebase.firestore();
   }
 
   // ---------- student gate ----------
-  function renderPinInputs(containerId, onComplete){
-    const c = document.getElementById(containerId);
-    const inputs = c.querySelectorAll('.pin-row input');
-    inputs.forEach((inp, i) => {
-      inp.addEventListener('keydown', e => {
-        if(e.key === 'Backspace'){
-          if(inp.value){ inp.value = ''; }
-          else if(i > 0){ inputs[i-1].focus(); inputs[i-1].value = ''; }
-          e.preventDefault();
-        }
-      });
-      inp.addEventListener('input', e => {
-        const v = e.target.value.replace(/\D/g,'');
-        inp.value = v ? v[0] : '';
-        if(inp.value && i < inputs.length - 1) inputs[i+1].focus();
-        if([...inputs].every(x => x.value)){
-          const pin = [...inputs].map(x=>x.value).join('');
-          onComplete(pin);
-        }
-      });
-      inp.addEventListener('paste', e => { e.preventDefault(); });
-    });
-    inputs[0].focus();
-  }
-
   function renderStudentGate(){
     shell.innerHTML = `
       ${topbar(`<button id="home">처음으로</button>`)}
       <div class="container">
-        <div class="gate" id="gate-box">
+        <div class="gate">
           <h2 class="serif">이름을 알려주세요</h2>
           <p class="hint">처음이라면 이름을 입력해 새 기록장을 만들고, 이미 쓰고 있었다면 같은 이름을 입력해 이어서 써요.</p>
           <div class="field">
             <label>이름</label>
             <input id="nm" type="text" placeholder="예: 24기김민준" maxlength="20" />
           </div>
-          <button class="btn btn-primary btn-block" id="go">다음</button>
+          <button class="btn btn-primary btn-block" id="go">기록장 열기</button>
         </div>
       </div>`;
     document.getElementById('home').onclick = () => { state.role=null; render(); };
     const nm = document.getElementById('nm');
     nm.focus();
-
-    const showPinStep = (name, record, isNew) => {
-      const hasPin = !!record.pin;
-      const box = document.getElementById('gate-box');
-      if(hasPin){
-        box.innerHTML = `
-          <h2 class="serif">PIN을 입력해 주세요</h2>
-          <p class="hint"><b>${esc(name)}</b>님의 기록장이에요. 4자리 PIN을 입력하세요.</p>
-          <div id="pin-area"><div class="pin-row">
-            <input type="tel" maxlength="1"/>
-            <input type="tel" maxlength="1"/>
-            <input type="tel" maxlength="1"/>
-            <input type="tel" maxlength="1"/>
-          </div></div>
-          <div class="pin-err" id="pin-err"></div>
-          <button class="btn btn-ghost btn-block" id="back-name" style="margin-top:4px;">이름 다시 입력</button>`;
-        document.getElementById('back-name').onclick = () => renderStudentGate();
-        renderPinInputs('pin-area', async (pin) => {
-          if(pin !== record.pin){
-            document.getElementById('pin-err').textContent = 'PIN이 맞지 않아요. 다시 입력해 주세요.';
-            box.querySelectorAll('.pin-row input').forEach(x => x.value = '');
-            box.querySelector('.pin-row input').focus();
-            return;
-          }
-          await loadConfig();
-          state.studentName = name;
-          state.record = record;
-          state.tab = cfg().sections[0]?.key || 'daily';
-          render();
-        });
-      } else {
-        box.innerHTML = `
-          <h2 class="serif">${isNew ? '새 기록장을 만들어요' : '처음 오셨군요!'}</h2>
-          <p class="hint">기록장을 보호할 <b>4자리 PIN</b>을 설정해 주세요. 나만 알고 있어야 해요!</p>
-          <div id="pin-area"><div class="pin-row">
-            <input type="tel" maxlength="1"/>
-            <input type="tel" maxlength="1"/>
-            <input type="tel" maxlength="1"/>
-            <input type="tel" maxlength="1"/>
-          </div></div>
-          <div class="pin-err" id="pin-err">PIN을 설정하면 자동으로 기록장이 열려요.</div>`;
-        let firstPin = null;
-        renderPinInputs('pin-area', async (pin) => {
-          if(!firstPin){
-            firstPin = pin;
-            box.innerHTML = `
-              <h2 class="serif">한 번 더 입력해 주세요</h2>
-              <p class="hint">방금 입력한 PIN을 한 번 더 확인할게요.</p>
-              <div id="pin-area"><div class="pin-row">
-                <input type="tel" maxlength="1"/>
-                <input type="tel" maxlength="1"/>
-                <input type="tel" maxlength="1"/>
-                <input type="tel" maxlength="1"/>
-              </div></div>
-              <div class="pin-err" id="pin-err"></div>`;
-            renderPinInputs('pin-area', async (pin2) => {
-              if(pin2 !== firstPin){
-                document.getElementById('pin-err').textContent = 'PIN이 일치하지 않아요. 처음부터 다시 설정해요.';
-                setTimeout(() => showPinStep(name, record, isNew), 1200);
-                return;
-              }
-              record.pin = pin2;
-              await saveRecord(name, record);
-              await loadConfig();
-              await ensureStudent(name);
-              state.studentName = name;
-              state.record = record;
-              state.tab = cfg().sections[0]?.key || 'daily';
-              toast('PIN이 설정됐어요! 기록장이 열려요 📖');
-              render();
-            });
-          }
-        });
-      }
-    };
-
     const submit = async () => {
       const v = nm.value.trim();
       if(!v){ toast('이름을 입력해 주세요.'); return; }
-      document.getElementById('go').disabled = true;
-      document.getElementById('go').textContent = '확인 중...';
+      state.loading = true;
       await loadConfig();
-      const record = await loadRecord(v);
-      const isNew = record.entries.length === 0 && !record.pin;
-      showPinStep(v, record, isNew);
+      await ensureStudent(v);
+      state.studentName = v;
+      state.record = await loadRecord(v);
+      state.tab = cfg().sections[0]?.key || 'daily';
+      render();
     };
     document.getElementById('go').onclick = submit;
     nm.addEventListener('keydown', e => { if(e.key==='Enter') submit(); });
@@ -1138,38 +1030,58 @@ const db = firebase.firestore();
 
   function renderMemoTab(panel){
     const memos = state.record.entries.filter(e=>e.type==='memo').sort((a,b)=>b.createdAt-a.createdAt);
+    // 이 세션에서 비밀번호 해제된 메모 id 목록
+    if(!state.unlockedMemos) state.unlockedMemos = {};
+
     panel.innerHTML = `
       <div class="section-title serif">쓰다 · 일상 메모</div>
-      <div class="section-desc">순간순간의 생각과 일상을 자유롭게 기록해요. 언제든 수정할 수 있어요.</div>
+      <div class="section-desc">순간순간의 생각과 일상을 자유롭게 기록해요. 비밀번호를 설정하면 나만 볼 수 있어요.</div>
       <div id="memo-compose-area">
         <div class="memo-compose">
           <div class="memo-compose-label">✏️ 오늘 ${fmtDate(todayStr())} — 새 메모 작성</div>
           <textarea id="memo-new-content" placeholder="지금 이 순간을 기록해 보세요..."></textarea>
+          <div class="field" style="margin-top:10px;">
+            <label>🔒 비밀번호 설정 <span style="font-weight:400;color:var(--ink-soft);">(선택 · 비워두면 공개)</span></label>
+            <input id="memo-new-pw" type="password" placeholder="비밀번호 입력 (선택사항)" maxlength="20" autocomplete="new-password"/>
+          </div>
           <div class="memo-save-row">
             <button class="btn btn-primary" id="memo-new-save" style="font-size:13px;padding:8px 18px;">저장</button>
           </div>
         </div>
       </div>
       <div id="memo-list">
-        ${memos.length ? memos.map((m,i)=>`
-          <div class="memo-card" id="mcard-${m.id}">
+        ${memos.length ? memos.map((m)=>{
+          const isLocked = !!m.password;
+          const isUnlocked = state.unlockedMemos[m.id];
+          const showContent = !isLocked || isUnlocked;
+          return `<div class="memo-card" id="mcard-${m.id}">
             <div class="memo-card-head" data-id="${m.id}">
-              <span class="memo-card-date">${fmtDateFull(m.date)}${m.updatedAt ? ' · 수정됨' : ''}</span>
-              <span class="memo-card-preview">${esc(m.content.replace(/\n/g,' '))}</span>
+              <span class="memo-card-date">${fmtDateFull(m.date)}${m.updatedAt ? ' · 수정됨' : ''}${isLocked ? ' 🔒' : ''}</span>
+              <span class="memo-card-preview">${isLocked && !isUnlocked ? '비밀 메모예요' : esc(m.content.replace(/\n/g,' '))}</span>
               <div class="memo-card-actions">
-                <button class="memo-btn memo-btn-edit" data-id="${m.id}">수정</button>
+                ${showContent ? `<button class="memo-btn memo-btn-edit" data-id="${m.id}">수정</button>` : ''}
                 <button class="memo-btn memo-btn-del" data-id="${m.id}">삭제</button>
               </div>
             </div>
             <div class="memo-body hidden" id="mbody-${m.id}">
+              ${isLocked && !isUnlocked ? `
+                <div style="padding:14px 0 4px;">
+                  <div style="font-size:13px;color:var(--ink-soft);margin-bottom:8px;">🔒 비밀번호를 입력해야 볼 수 있어요.</div>
+                  <div style="display:flex;gap:8px;">
+                    <input type="password" class="memo-pw-input" data-id="${m.id}" placeholder="비밀번호" maxlength="20" style="flex:1;border:1px solid var(--paper-line);border-radius:8px;padding:8px 10px;font-size:14px;"/>
+                    <button class="memo-btn memo-btn-edit memo-pw-confirm" data-id="${m.id}" style="padding:8px 14px;">확인</button>
+                  </div>
+                  <div class="memo-pw-err" id="mpwerr-${m.id}" style="color:var(--clay);font-size:12.5px;margin-top:6px;min-height:16px;"></div>
+                </div>` : `
               <div class="memo-content-view" id="mview-${m.id}">${esc(m.content)}</div>
               <textarea class="memo-editor hidden" id="medit-${m.id}">${esc(m.content)}</textarea>
               <div class="memo-save-row hidden" id="msave-${m.id}">
                 <button class="memo-btn" style="background:var(--paper-line);color:var(--ink-soft);" data-cancel="${m.id}">취소</button>
                 <button class="btn btn-primary memo-btn" style="font-size:13px;padding:6px 16px;" data-save="${m.id}">저장</button>
-              </div>
+              </div>`}
             </div>
-          </div>`).join('') : `<div class="empty"><div class="big">📝</div>아직 메모가 없어요.<br>첫 번째 순간을 기록해 보세요.</div>`}
+          </div>`;
+        }).join('') : `<div class="empty"><div class="big">📝</div>아직 메모가 없어요.<br>첫 번째 순간을 기록해 보세요.</div>`}
       </div>
     `;
 
@@ -1178,12 +1090,15 @@ const db = firebase.firestore();
       if(saving) return;
       const content = document.getElementById('memo-new-content').value.trim();
       if(!content){ toast('내용을 입력해 주세요.'); return; }
+      const pw = document.getElementById('memo-new-pw').value.trim();
       const btn = document.getElementById('memo-new-save');
       saving = true; btnSaving(btn);
-      state.record.entries.push({ id:uid(), type:'memo', date:todayStr(), createdAt:Date.now(), content });
+      const entry = { id:uid(), type:'memo', date:todayStr(), createdAt:Date.now(), content };
+      if(pw) entry.password = pw;
+      state.record.entries.push(entry);
       const ok = await saveRecord(state.studentName, state.record);
       saving = false;
-      if(ok){ btnDone(btn); toast('메모를 저장했어요.'); setTimeout(()=>render(), 1000); }
+      if(ok){ btnDone(btn); toast(pw ? '비밀 메모를 저장했어요. 🔒' : '메모를 저장했어요.'); setTimeout(()=>{ state.unlockedMemos = {}; render(); }, 1000); }
       else { btnReset(btn); state.record.entries.pop(); }
     };
 
@@ -1192,13 +1107,35 @@ const db = firebase.firestore();
       h.onclick = (e)=>{
         if(e.target.closest('button')) return;
         const id = h.dataset.id;
-        const body = document.getElementById('mbody-'+id);
-        body.classList.toggle('hidden');
+        document.getElementById('mbody-'+id).classList.toggle('hidden');
       };
+    });
+
+    // 비밀번호 확인
+    panel.querySelectorAll('.memo-pw-confirm').forEach(btn=>{
+      const confirm_pw = ()=>{
+        const id = btn.dataset.id;
+        const input = panel.querySelector(`.memo-pw-input[data-id="${id}"]`);
+        const entry = state.record.entries.find(e=>e.id===id);
+        if(!entry) return;
+        if(input.value === entry.password){
+          state.unlockedMemos[id] = true;
+          renderMemoTab(panel);
+          document.getElementById('mbody-'+id)?.classList.remove('hidden');
+        } else {
+          document.getElementById('mpwerr-'+id).textContent = '비밀번호가 틀렸어요.';
+          input.value = '';
+          input.focus();
+        }
+      };
+      btn.onclick = confirm_pw;
+      const input = panel.querySelector(`.memo-pw-input[data-id="${btn.dataset.id}"]`);
+      if(input) input.addEventListener('keydown', e=>{ if(e.key==='Enter') confirm_pw(); });
     });
 
     // 수정 버튼
     panel.querySelectorAll('.memo-btn-edit').forEach(btn=>{
+      if(btn.classList.contains('memo-pw-confirm')) return;
       btn.onclick = ()=>{
         const id = btn.dataset.id;
         document.getElementById('mbody-'+id).classList.remove('hidden');
@@ -1229,7 +1166,7 @@ const db = firebase.firestore();
         const content = document.getElementById('medit-'+id).value.trim();
         if(!content){ toast('내용을 입력해 주세요.'); return; }
         const entry = state.record.entries.find(e=>e.id===id);
-        if(!entry){ return; }
+        if(!entry) return;
         if(entry.content === content){ toast('변경된 내용이 없어요.'); return; }
         saving = true; btnSaving(btn);
         entry.content = content;
@@ -1245,14 +1182,21 @@ const db = firebase.firestore();
     panel.querySelectorAll('.memo-btn-del').forEach(btn=>{
       btn.onclick = async ()=>{
         if(saving) return;
-        if(!confirm('이 메모를 삭제할까요?')) return;
         const id = btn.dataset.id;
+        const entry = state.record.entries.find(e=>e.id===id);
+        const isLocked = !!entry?.password && !state.unlockedMemos[id];
+        if(isLocked){
+          toast('비밀번호를 먼저 확인해야 삭제할 수 있어요.');
+          document.getElementById('mbody-'+id)?.classList.remove('hidden');
+          return;
+        }
+        if(!confirm('이 메모를 삭제할까요?')) return;
         saving = true;
         state.record.entries = state.record.entries.filter(e=>e.id!==id);
         const ok = await saveRecord(state.studentName, state.record);
         saving = false;
         if(ok){ toast('메모를 삭제했어요.'); render(); }
-        else { state.record.entries.push(state.record.entries.find(e=>e.id===id)); }
+        else { state.record.entries.push(entry); }
       };
     });
   }
@@ -1436,18 +1380,15 @@ const db = firebase.firestore();
 
         <div class="setting-card">
           <h3>학생 관리</h3>
-          <div class="section-desc">등록된 학생 목록입니다. PIN 초기화 시 학생이 다음 접속 때 새 PIN을 설정해요.</div>
+          <div class="section-desc">등록된 학생 목록입니다. 삭제하면 해당 학생의 모든 기록이 함께 삭제됩니다.</div>
           <div id="s-students">
             ${students.length ? students.map(s=>`
               <div class="stu-manage">
                 <div>
                   <div class="nm">${esc(s.name)}</div>
-                  <div class="info">기록 ${s.record.entries.length}개 · PIN ${s.record.pin ? '설정됨' : '미설정'}</div>
+                  <div class="info">기록 ${s.record.entries.length}개</div>
                 </div>
-                <div style="display:flex;gap:6px;">
-                  ${s.record.pin ? `<button class="btn btn-ghost btn-sm stu-pin-reset" data-name="${esc(s.name)}">PIN 초기화</button>` : ''}
-                  <button class="btn btn-danger btn-sm stu-del" data-name="${esc(s.name)}">삭제</button>
-                </div>
+                <button class="btn btn-danger btn-sm stu-del" data-name="${esc(s.name)}">삭제</button>
               </div>
             `).join('') : `<div class="empty" style="padding:20px;"><div class="big">🧑‍🎓</div>등록된 학생이 없어요.</div>`}
           </div>
@@ -1522,16 +1463,6 @@ const db = firebase.firestore();
       };
     });
 
-    shell.querySelectorAll('.stu-pin-reset').forEach(btn=>{
-      btn.onclick = async () => {
-        const name = btn.dataset.name;
-        if(!confirm(`"${name}" 학생의 PIN을 초기화할까요?\n학생이 다음 접속 시 새 PIN을 설정하게 됩니다.`)) return;
-        const rec = await loadRecord(name);
-        delete rec.pin;
-        await saveRecord(name, rec);
-        toast(`${name} 학생의 PIN을 초기화했어요.`);
-      };
-    });
   }
 
   // ---------- init ----------
