@@ -350,6 +350,10 @@
   .cal-cell.empty-cell { border: none; background: transparent; }
   .cal-cell.got { background: var(--gold-soft); border-color: var(--gold); color: #7A5A16; }
   .cal-cell.got .sticker { font-size: 17px; }
+  .cal-cell.got-free { background: #FFF0F0; border-color: #E87070; color: #8B2020; }
+  .cal-cell.got-book { background: #F5F0FF; border-color: #9B70C8; color: #4A2080; }
+  .cal-cell.got-multi { background: var(--gold-soft); border-color: var(--gold); color: #7A5A16; }
+  .sticker-row { display: flex; justify-content: center; gap: 1px; flex-wrap: wrap; font-size: 13px; line-height: 1; }
   .cal-cell.miss { background: #F7F3EA; color: #C3B89E; }
   .cal-cell.today { box-shadow: 0 0 0 2px var(--forest) inset; font-weight: 700; }
   .cal-summary { display: flex; align-items: center; gap: 10px; margin: 16px 0 4px; font-size: 13.5px; color: var(--ink-soft); flex-wrap: wrap; }
@@ -530,6 +534,8 @@ const db = firebase.firestore();
     const dim = new Date(y, m, 0).getDate();
     const todayS = todayStr();
     const dailyDates = new Set(record.entries.filter(e=>e.type==='daily').map(e=>e.date));
+    const freeDates  = new Set(record.entries.filter(e=>e.type==='free').map(e=>e.date));
+    const bookDates  = new Set(record.entries.filter(e=>e.type==='book').map(e=>e.date));
     const firstDow = new Date(y, m-1, 1).getDay();
     const cells = [];
     for(let i=0;i<firstDow;i++) cells.push(null);
@@ -538,8 +544,10 @@ const db = firebase.firestore();
       const ds = `${y}-${pad2(m)}-${pad2(d)}`;
       const isFuture = ds > todayS;
       const has = dailyDates.has(ds);
+      const hasFree = freeDates.has(ds);
+      const hasBook = bookDates.has(ds);
       if(!isFuture){ elapsed++; if(has) got++; }
-      cells.push({ day:d, date:ds, has, isFuture, isToday: ds===todayS });
+      cells.push({ day:d, date:ds, has, hasFree, hasBook, isFuture, isToday: ds===todayS });
     }
     const isCurrentMonth = ym === monthKey(todayS);
     return { y, m, dim, cells, got, elapsed, isCurrentMonth };
@@ -558,8 +566,21 @@ const db = firebase.firestore();
         ${weekdayNames.map(w=>`<div class="cal-wd">${w}</div>`).join('')}
         ${stats.cells.map(c=>{
           if(!c) return `<div class="cal-cell empty-cell"></div>`;
-          const cls = c.isFuture ? '' : (c.has? 'got':'miss');
-          return `<div class="cal-cell ${cls} ${c.isToday?'today':''}">${c.has && !c.isFuture ? `<span class="sticker">⭐</span>` : `<span class="num">${c.day}</span>`}</div>`;
+          const anySticker = !c.isFuture && (c.has || c.hasFree || c.hasBook);
+          let cls = '';
+          if(c.isFuture) cls = '';
+          else if(c.has && (c.hasFree || c.hasBook)) cls = 'got-multi';
+          else if(c.has) cls = 'got';
+          else if(c.hasFree && c.hasBook) cls = 'got-multi';
+          else if(c.hasFree) cls = 'got-free';
+          else if(c.hasBook) cls = 'got-book';
+          else cls = 'miss';
+          const stickers = !c.isFuture ? [
+            c.has     ? '⭐' : '',
+            c.hasFree ? '<span style="color:#E87070;">★</span>' : '',
+            c.hasBook ? '<span style="color:#9B70C8;">★</span>' : '',
+          ].filter(Boolean).join('') : '';
+          return `<div class="cal-cell ${cls} ${c.isToday?'today':''}">${anySticker ? `<div class="sticker-row">${stickers}</div>` : `<span class="num">${c.day}</span>`}</div>`;
         }).join('')}
       </div>
       <div class="cal-summary">이번 달 스티커 <b>${stats.got}</b> / ${stats.isCurrentMonth ? stats.elapsed : stats.dim}일
@@ -968,7 +989,7 @@ const db = firebase.firestore();
     const stats = calendarStats(state.record, state.stickerMonth);
     panel.innerHTML = `
       <div class="section-title serif">${esc(sectionLabel('stickers'))} · 이번 달 스티커판</div>
-      <div class="section-desc">오늘의 독서기록을 쓴 날마다 스티커⭐가 붙어요. 한 달을 빠짐없이 채우면 선생님께 선물을 받을 수 있어요!</div>
+      <div class="section-desc">읽다에 기록하면 ⭐, 짓다에 쓰면 <span style="color:#E87070;">★</span>, 잇다에 완독을 기록하면 <span style="color:#9B70C8;">★</span>가 붙어요. 한 달을 빠짐없이 채우면 선생님께 선물을 받을 수 있어요!</div>
       ${calendarHtml(stats, 'cal')}
     `;
     document.getElementById('cal-prev').onclick = () => { state.stickerMonth = shiftMonth(state.stickerMonth,-1); renderStickersTab(panel); };
@@ -990,7 +1011,7 @@ const db = firebase.firestore();
       </div>
       <div class="field"><label>별점</label><div class="star-picker" id="b-stars">${[1,2,3,4,5].map(n=>`<span data-n="${n}">★</span>`).join('')}</div></div>
       <div class="field"><label>기억나는 문장</label><textarea id="b-quote" placeholder="책에서 가장 마음에 남은 문장을 그대로 옮겨 적어 보세요." style="min-height:60px;"></textarea></div>
-      <div class="field"><label>전체 감상</label><textarea id="b-review" placeholder="어떤 이야기였는지, 무엇을 느꼈는지 자유롭게 써 보세요." style="min-height:120px;"></textarea></div>
+      <div class="field"><label>전체 감상 <span id="b-charcount" style="font-weight:400;color:var(--ink-soft);"></span></label><textarea id="b-review" placeholder="어떤 이야기였는지, 무엇을 느꼈는지 자유롭게 써 보세요." style="min-height:120px;"></textarea></div>
       ${pwFieldHtml('🔒 비밀번호 설정')}
       <button class="btn btn-primary" id="b-save">완독 기록 저장</button>
       <div class="divider"></div>
@@ -1007,6 +1028,17 @@ const db = firebase.firestore();
     `;
     bindRevisionToggles(panel);
     bindLockOverlays(panel, ()=>renderBookTab(panel));
+    const bReview = document.getElementById('b-review');
+    const bCharcount = document.getElementById('b-charcount');
+    if(bReview && bCharcount){
+      const updateCount = () => {
+        const n = bReview.value.length;
+        bCharcount.textContent = n >= 500 ? `(${n}자 ✓)` : `(${n} / 500자)`;
+        bCharcount.style.color = n >= 500 ? 'var(--forest)' : 'var(--clay)';
+      };
+      bReview.addEventListener('input', updateCount);
+      updateCount();
+    }
     let rating = 0;
     const stars = panel.querySelectorAll('#b-stars span');
     stars.forEach(s=>{
@@ -1023,6 +1055,7 @@ const db = firebase.firestore();
       const review = document.getElementById('b-review').value.trim();
       const pw = panel.querySelector('.entry-pw-field')?.value.trim() || '';
       if(!title || !review){ toast('책 제목과 감상을 입력해 주세요.'); return; }
+      if(review.length < 500){ toast(`감상 내용이 너무 짧아요. 띄어쓰기 포함 500자 이상 써야 저장돼요. (현재 ${review.length}자)`); return; }
       const dup = state.record.entries.find(e=> e.type==='book' && e.title===title && e.review===review);
       if(dup){ toast('이미 같은 내용의 기록이 있어요.'); return; }
       saving = true;
@@ -1050,7 +1083,7 @@ const db = firebase.firestore();
         <div id="free-lock-area">${lockOverlayHtml(thisWeek)}</div>
       ` : `
         <div class="field"><label>제목</label><input id="f-title" value="${esc(thisWeek?.title||'')}" placeholder="글의 제목을 지어 주세요"/></div>
-        <div class="field"><label>내용</label><textarea id="f-content" style="min-height:200px;" placeholder="무엇에 대해 써도 좋아요. 이번 주에 있었던 일, 읽은 책에 대한 생각, 상상 이야기...">${esc(thisWeek?.content||'')}</textarea></div>
+        <div class="field"><label>내용 <span id="f-charcount" style="font-weight:400;color:var(--ink-soft);"></span></label><textarea id="f-content" style="min-height:200px;" placeholder="무엇에 대해 써도 좋아요. 이번 주에 있었던 일, 읽은 책에 대한 생각, 상상 이야기...">${esc(thisWeek?.content||'')}</textarea></div>
         ${!thisWeek ? pwFieldHtml('🔒 비밀번호 설정') : ''}
         <button class="btn btn-primary" id="f-save">${thisWeek?'수정해서 저장':'이번 주 글쓰기 저장'}</button>
       `}
@@ -1064,6 +1097,17 @@ const db = firebase.firestore();
     `;
     bindRevisionToggles(panel);
     bindLockOverlays(panel, ()=>renderFreeTab(panel));
+    const fContent = document.getElementById('f-content');
+    const fCharcount = document.getElementById('f-charcount');
+    if(fContent && fCharcount){
+      const updateCount = () => {
+        const n = fContent.value.length;
+        fCharcount.textContent = n >= 500 ? `(${n}자 ✓)` : `(${n} / 500자)`;
+        fCharcount.style.color = n >= 500 ? 'var(--forest)' : 'var(--clay)';
+      };
+      fContent.addEventListener('input', updateCount);
+      updateCount();
+    }
     const fSave = document.getElementById('f-save');
     if(fSave) fSave.onclick = async () => {
       if(saving) return;
@@ -1072,6 +1116,7 @@ const db = firebase.firestore();
       const content = document.getElementById('f-content').value.trim();
       const pw = panel.querySelector('.entry-pw-field')?.value.trim() || '';
       if(!title || !content){ toast('제목과 내용을 입력해 주세요.'); return; }
+      if(content.length < 500){ toast(`내용이 너무 짧아요. 띄어쓰기 포함 500자 이상 써야 저장돼요. (현재 ${content.length}자)`); return; }
       if(thisWeek && thisWeek.title === title && thisWeek.content === content){
         toast('변경된 내용이 없어요.'); return;
       }
