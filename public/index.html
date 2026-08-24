@@ -207,6 +207,14 @@
     border-radius: 16px; padding: 32px 28px; box-shadow: var(--shadow); }
   .gate h2 { font-family: 'Noto Serif KR', serif; margin: 0 0 6px; font-size: 22px; }
   .gate p.hint { color: var(--ink-soft); font-size: 13.5px; margin: 0 0 20px; }
+  .pin-row { display: flex; gap: 10px; justify-content: center; margin: 18px 0 6px; }
+  .pin-row input {
+    width: 52px; height: 60px; text-align: center; font-size: 24px; font-weight: 700;
+    border: 2px solid var(--paper-line); border-radius: 12px; background: #fff;
+    color: var(--ink); font-family: 'Noto Sans KR', sans-serif; caret-color: transparent;
+  }
+  .pin-row input:focus { outline: none; border-color: var(--forest); background: var(--sage); }
+  .pin-err { color: var(--clay); font-size: 13px; text-align: center; min-height: 18px; margin-bottom: 10px; }
   .field { margin-bottom: 14px; }
   .field label { display: block; font-size: 12.5px; color: var(--ink-soft); margin-bottom: 6px; font-weight: 500; }
   .field input, .field textarea, .field select {
@@ -798,33 +806,133 @@ const db = firebase.firestore();
   }
 
   // ---------- student gate ----------
+  function renderPinInputs(containerId, onComplete){
+    const c = document.getElementById(containerId);
+    const inputs = c.querySelectorAll('.pin-row input');
+    inputs.forEach((inp, i) => {
+      inp.addEventListener('keydown', e => {
+        if(e.key === 'Backspace'){
+          if(inp.value){ inp.value = ''; }
+          else if(i > 0){ inputs[i-1].focus(); inputs[i-1].value = ''; }
+          e.preventDefault();
+        }
+      });
+      inp.addEventListener('input', e => {
+        const v = e.target.value.replace(/\D/g,'');
+        inp.value = v ? v[0] : '';
+        if(inp.value && i < inputs.length - 1) inputs[i+1].focus();
+        if([...inputs].every(x => x.value)){
+          const pin = [...inputs].map(x=>x.value).join('');
+          onComplete(pin);
+        }
+      });
+      inp.addEventListener('paste', e => { e.preventDefault(); });
+    });
+    inputs[0].focus();
+  }
+
   function renderStudentGate(){
     shell.innerHTML = `
       ${topbar(`<button id="home">처음으로</button>`)}
       <div class="container">
-        <div class="gate">
+        <div class="gate" id="gate-box">
           <h2 class="serif">이름을 알려주세요</h2>
           <p class="hint">처음이라면 이름을 입력해 새 기록장을 만들고, 이미 쓰고 있었다면 같은 이름을 입력해 이어서 써요.</p>
           <div class="field">
             <label>이름</label>
-            <input id="nm" type="text" placeholder="예: 김민준" maxlength="20" />
+            <input id="nm" type="text" placeholder="예: 24기김민준" maxlength="20" />
           </div>
-          <button class="btn btn-primary btn-block" id="go">기록장 열기</button>
+          <button class="btn btn-primary btn-block" id="go">다음</button>
         </div>
       </div>`;
     document.getElementById('home').onclick = () => { state.role=null; render(); };
     const nm = document.getElementById('nm');
     nm.focus();
+
+    const showPinStep = (name, record, isNew) => {
+      const hasPin = !!record.pin;
+      const box = document.getElementById('gate-box');
+      if(hasPin){
+        box.innerHTML = `
+          <h2 class="serif">PIN을 입력해 주세요</h2>
+          <p class="hint"><b>${esc(name)}</b>님의 기록장이에요. 4자리 PIN을 입력하세요.</p>
+          <div id="pin-area"><div class="pin-row">
+            <input type="tel" maxlength="1"/>
+            <input type="tel" maxlength="1"/>
+            <input type="tel" maxlength="1"/>
+            <input type="tel" maxlength="1"/>
+          </div></div>
+          <div class="pin-err" id="pin-err"></div>
+          <button class="btn btn-ghost btn-block" id="back-name" style="margin-top:4px;">이름 다시 입력</button>`;
+        document.getElementById('back-name').onclick = () => renderStudentGate();
+        renderPinInputs('pin-area', async (pin) => {
+          if(pin !== record.pin){
+            document.getElementById('pin-err').textContent = 'PIN이 맞지 않아요. 다시 입력해 주세요.';
+            box.querySelectorAll('.pin-row input').forEach(x => x.value = '');
+            box.querySelector('.pin-row input').focus();
+            return;
+          }
+          await loadConfig();
+          state.studentName = name;
+          state.record = record;
+          state.tab = cfg().sections[0]?.key || 'daily';
+          render();
+        });
+      } else {
+        box.innerHTML = `
+          <h2 class="serif">${isNew ? '새 기록장을 만들어요' : '처음 오셨군요!'}</h2>
+          <p class="hint">기록장을 보호할 <b>4자리 PIN</b>을 설정해 주세요. 나만 알고 있어야 해요!</p>
+          <div id="pin-area"><div class="pin-row">
+            <input type="tel" maxlength="1"/>
+            <input type="tel" maxlength="1"/>
+            <input type="tel" maxlength="1"/>
+            <input type="tel" maxlength="1"/>
+          </div></div>
+          <div class="pin-err" id="pin-err">PIN을 설정하면 자동으로 기록장이 열려요.</div>`;
+        let firstPin = null;
+        renderPinInputs('pin-area', async (pin) => {
+          if(!firstPin){
+            firstPin = pin;
+            box.innerHTML = `
+              <h2 class="serif">한 번 더 입력해 주세요</h2>
+              <p class="hint">방금 입력한 PIN을 한 번 더 확인할게요.</p>
+              <div id="pin-area"><div class="pin-row">
+                <input type="tel" maxlength="1"/>
+                <input type="tel" maxlength="1"/>
+                <input type="tel" maxlength="1"/>
+                <input type="tel" maxlength="1"/>
+              </div></div>
+              <div class="pin-err" id="pin-err"></div>`;
+            renderPinInputs('pin-area', async (pin2) => {
+              if(pin2 !== firstPin){
+                document.getElementById('pin-err').textContent = 'PIN이 일치하지 않아요. 처음부터 다시 설정해요.';
+                setTimeout(() => showPinStep(name, record, isNew), 1200);
+                return;
+              }
+              record.pin = pin2;
+              await saveRecord(name, record);
+              await loadConfig();
+              await ensureStudent(name);
+              state.studentName = name;
+              state.record = record;
+              state.tab = cfg().sections[0]?.key || 'daily';
+              toast('PIN이 설정됐어요! 기록장이 열려요 📖');
+              render();
+            });
+          }
+        });
+      }
+    };
+
     const submit = async () => {
       const v = nm.value.trim();
       if(!v){ toast('이름을 입력해 주세요.'); return; }
-      state.loading = true;
+      document.getElementById('go').disabled = true;
+      document.getElementById('go').textContent = '확인 중...';
       await loadConfig();
-      await ensureStudent(v);
-      state.studentName = v;
-      state.record = await loadRecord(v);
-      state.tab = cfg().sections[0]?.key || 'daily';
-      render();
+      const record = await loadRecord(v);
+      const isNew = record.entries.length === 0 && !record.pin;
+      showPinStep(v, record, isNew);
     };
     document.getElementById('go').onclick = submit;
     nm.addEventListener('keydown', e => { if(e.key==='Enter') submit(); });
@@ -860,10 +968,10 @@ const db = firebase.firestore();
   }
 
   function entryBadge(type){
-    const lbl = sectionLabel(type==='daily'?'daily':(type==='book'?'book':'free'));
-    if(type==='daily') return `<span class="badge badge-daily">${esc(lbl)}</span>`;
-    if(type==='book') return `<span class="badge badge-book">${esc(lbl)}</span>`;
-    return `<span class="badge badge-free">${esc(lbl)}</span>`;
+    if(type==='daily') return `<span class="badge badge-daily">${esc(sectionLabel('daily'))}</span>`;
+    if(type==='book')  return `<span class="badge badge-book">${esc(sectionLabel('book'))}</span>`;
+    if(type==='memo')  return `<span class="badge" style="background:#EDE0D4;color:#5C3D1E;">${esc(sectionLabel('memo'))}</span>`;
+    return `<span class="badge badge-free">${esc(sectionLabel('free'))}</span>`;
   }
   function feedbackHtml(entry){
     if(!entry.feedback) return '';
@@ -1328,15 +1436,18 @@ const db = firebase.firestore();
 
         <div class="setting-card">
           <h3>학생 관리</h3>
-          <div class="section-desc">등록된 학생 목록입니다. 삭제하면 해당 학생의 모든 기록이 함께 삭제됩니다.</div>
+          <div class="section-desc">등록된 학생 목록입니다. PIN 초기화 시 학생이 다음 접속 때 새 PIN을 설정해요.</div>
           <div id="s-students">
             ${students.length ? students.map(s=>`
               <div class="stu-manage">
                 <div>
                   <div class="nm">${esc(s.name)}</div>
-                  <div class="info">기록 ${s.record.entries.length}개</div>
+                  <div class="info">기록 ${s.record.entries.length}개 · PIN ${s.record.pin ? '설정됨' : '미설정'}</div>
                 </div>
-                <button class="btn btn-danger btn-sm stu-del" data-name="${esc(s.name)}">삭제</button>
+                <div style="display:flex;gap:6px;">
+                  ${s.record.pin ? `<button class="btn btn-ghost btn-sm stu-pin-reset" data-name="${esc(s.name)}">PIN 초기화</button>` : ''}
+                  <button class="btn btn-danger btn-sm stu-del" data-name="${esc(s.name)}">삭제</button>
+                </div>
               </div>
             `).join('') : `<div class="empty" style="padding:20px;"><div class="big">🧑‍🎓</div>등록된 학생이 없어요.</div>`}
           </div>
@@ -1408,6 +1519,17 @@ const db = firebase.firestore();
         await loadTeacherList();
         state.teacherView = 'settings';
         render();
+      };
+    });
+
+    shell.querySelectorAll('.stu-pin-reset').forEach(btn=>{
+      btn.onclick = async () => {
+        const name = btn.dataset.name;
+        if(!confirm(`"${name}" 학생의 PIN을 초기화할까요?\n학생이 다음 접속 시 새 PIN을 설정하게 됩니다.`)) return;
+        const rec = await loadRecord(name);
+        delete rec.pin;
+        await saveRecord(name, rec);
+        toast(`${name} 학생의 PIN을 초기화했어요.`);
       };
     });
   }
