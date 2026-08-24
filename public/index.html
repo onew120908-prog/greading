@@ -267,6 +267,7 @@
   .entry-date { font-size: 12px; color: var(--ink-soft); white-space: nowrap; }
   .entry-meta { font-size: 12.5px; color: var(--ink-soft); margin-top: 2px; }
   .entry-body { font-size: 14px; line-height: 1.65; margin-top: 8px; white-space: pre-wrap; }
+  .lock-overlay { text-align: center; padding: 18px 12px; background: var(--sage); border-radius: 10px; margin-top: 8px; }
   /* ===== 쓰다 탭 ===== */
   .memo-new-btn { display: flex; align-items: center; gap: 8px; padding: 14px 16px; background: var(--card); border: 1.5px dashed var(--forest); border-radius: 10px; color: var(--forest); font-size: 14px; font-weight: 700; cursor: pointer; width: 100%; margin-bottom: 18px; transition: background .15s; }
   .memo-new-btn:hover { background: var(--sage); }
@@ -870,6 +871,53 @@ const db = firebase.firestore();
     return `<div class="sticky"><b>선생님 피드백</b> · ${fmtDate(entry.feedback.at)}<br/>${esc(entry.feedback.text)}</div>`;
   }
 
+  // ---------- 비밀번호 잠금 헬퍼 ----------
+  function isEntryLocked(entry){
+    if(!entry.password) return false;
+    if(!state.unlockedEntries) state.unlockedEntries = {};
+    return !state.unlockedEntries[entry.id];
+  }
+  function lockOverlayHtml(entry){
+    return `<div class="lock-overlay" data-id="${entry.id}">
+      <span style="font-size:22px;">🔒</span>
+      <div style="font-size:13px;color:var(--ink-soft);margin:4px 0 10px;">비밀 기록이에요. 비밀번호를 입력해 주세요.</div>
+      <div style="display:flex;gap:8px;justify-content:center;">
+        <input type="password" class="lock-pw-input" data-id="${entry.id}" placeholder="비밀번호" maxlength="20"
+          style="border:1px solid var(--paper-line);border-radius:8px;padding:8px 10px;font-size:14px;width:160px;"/>
+        <button class="btn btn-primary btn-sm lock-pw-confirm" data-id="${entry.id}">확인</button>
+      </div>
+      <div class="lock-pw-err" id="lkerr-${entry.id}" style="color:var(--clay);font-size:12.5px;margin-top:6px;min-height:16px;"></div>
+    </div>`;
+  }
+  function pwFieldHtml(labelText){
+    return `<div class="field" style="margin-top:10px;">
+      <label>${labelText} <span style="font-weight:400;color:var(--ink-soft);">(선택 · 비워두면 공개)</span></label>
+      <input class="entry-pw-field" type="password" placeholder="비밀번호 입력 (선택사항)" maxlength="20" autocomplete="new-password"/>
+    </div>`;
+  }
+  function bindLockOverlays(container, onUnlock){
+    if(!state.unlockedEntries) state.unlockedEntries = {};
+    container.querySelectorAll('.lock-pw-confirm').forEach(btn=>{
+      const tryUnlock = () => {
+        const id = btn.dataset.id;
+        const input = container.querySelector(`.lock-pw-input[data-id="${id}"]`);
+        const entry = state.record.entries.find(e=>e.id===id);
+        if(!entry || !input) return;
+        if(input.value === entry.password){
+          state.unlockedEntries[id] = true;
+          if(onUnlock) onUnlock();
+        } else {
+          const err = document.getElementById('lkerr-'+id);
+          if(err) err.textContent = '비밀번호가 틀렸어요.';
+          input.value = ''; input.focus();
+        }
+      };
+      btn.onclick = tryUnlock;
+      const input = container.querySelector(`.lock-pw-input[data-id="${btn.dataset.id}"]`);
+      if(input) input.addEventListener('keydown', e=>{ if(e.key==='Enter') tryUnlock(); });
+    });
+  }
+
   function renderDailyTab(panel){
     const todays = state.record.entries.filter(e=>e.type==='daily').sort((a,b)=> b.createdAt-a.createdAt);
     panel.innerHTML = `
@@ -880,34 +928,37 @@ const db = firebase.firestore();
         <div class="field"><label>오늘 읽은 범위</label><input id="d-pages" placeholder="예: 45~68쪽"/></div>
       </div>
       <div class="field"><label>오늘의 한 줄 생각</label><textarea id="d-note" placeholder="가장 인상 깊었던 장면이나 느낀 점을 자유롭게 써 보세요."></textarea></div>
+      ${pwFieldHtml('🔒 비밀번호 설정')}
       <button class="btn btn-primary" id="d-save">오늘 기록 저장</button>
       <div class="divider"></div>
       <div class="section-title serif" style="font-size:15px;">최근 기록</div>
       ${todays.length ? `<div class="entry-list">${todays.slice(0,6).map(e=>`
         <div class="entry type-daily">
-          <div class="entry-top"><span class="entry-title">${esc(e.bookTitle)}</span><span class="entry-date">${fmtDate(e.date)}</span></div>
+          <div class="entry-top"><span class="entry-title">${esc(e.bookTitle)}${e.password?' 🔒':''}</span><span class="entry-date">${fmtDate(e.date)}</span></div>
           <div class="entry-meta">읽은 범위: ${esc(e.pagesRead||'-')}</div>
-          <div class="entry-body">${esc(e.note)}</div>
-          ${revisionsHtml(e)}
-          ${feedbackHtml(e)}
+          ${isEntryLocked(e) ? lockOverlayHtml(e) : `<div class="entry-body">${esc(e.note)}</div>${revisionsHtml(e)}${feedbackHtml(e)}`}
         </div>`).join('')}</div>` : `<div class="empty"><div class="big">🗒️</div>아직 기록이 없어요. 오늘부터 시작해 볼까요?</div>`}
     `;
     bindRevisionToggles(panel);
+    bindLockOverlays(panel, ()=>renderDailyTab(panel));
     document.getElementById('d-save').onclick = async () => {
       if(saving) return;
       const btn = document.getElementById('d-save');
       const title = document.getElementById('d-title').value.trim();
       const note = document.getElementById('d-note').value.trim();
       const pages = document.getElementById('d-pages').value.trim();
+      const pw = panel.querySelector('.entry-pw-field')?.value.trim() || '';
       if(!title || !note){ toast('책 제목과 오늘의 생각을 입력해 주세요.'); return; }
       const dup = state.record.entries.find(e=> e.type==='daily' && e.date===todayStr() && e.bookTitle===title && e.note===note);
       if(dup){ toast('이미 같은 내용의 기록이 있어요.'); return; }
       saving = true;
       btnSaving(btn);
-      state.record.entries.push({ id:uid(), type:'daily', date:todayStr(), createdAt:Date.now(), bookTitle:title, pagesRead:pages, note, feedback:null });
+      const entry = { id:uid(), type:'daily', date:todayStr(), createdAt:Date.now(), bookTitle:title, pagesRead:pages, note, feedback:null };
+      if(pw) entry.password = pw;
+      state.record.entries.push(entry);
       const ok = await saveRecord(state.studentName, state.record);
       saving = false;
-      if(ok){ btnDone(btn); toast('오늘의 기록을 저장했어요.'); setTimeout(()=>render(), 1200); }
+      if(ok){ btnDone(btn); toast(pw ? '비밀 기록을 저장했어요. 🔒' : '오늘의 기록을 저장했어요.'); setTimeout(()=>render(), 1200); }
       else { btnReset(btn); state.record.entries.pop(); }
     };
   }
@@ -940,20 +991,22 @@ const db = firebase.firestore();
       <div class="field"><label>별점</label><div class="star-picker" id="b-stars">${[1,2,3,4,5].map(n=>`<span data-n="${n}">★</span>`).join('')}</div></div>
       <div class="field"><label>기억나는 문장</label><textarea id="b-quote" placeholder="책에서 가장 마음에 남은 문장을 그대로 옮겨 적어 보세요." style="min-height:60px;"></textarea></div>
       <div class="field"><label>전체 감상</label><textarea id="b-review" placeholder="어떤 이야기였는지, 무엇을 느꼈는지 자유롭게 써 보세요." style="min-height:120px;"></textarea></div>
+      ${pwFieldHtml('🔒 비밀번호 설정')}
       <button class="btn btn-primary" id="b-save">완독 기록 저장</button>
       <div class="divider"></div>
       <div class="section-title serif" style="font-size:15px;">읽은 책들</div>
       ${books.length ? `<div class="entry-list">${books.map(e=>`
         <div class="entry type-book">
-          <div class="entry-top"><span class="entry-title">${esc(e.title)} <span style="color:var(--ink-soft); font-weight:400;">· ${esc(e.author||'')}</span></span><span class="entry-date">${fmtDate(e.startDate)} ~ ${fmtDate(e.endDate)}</span></div>
+          <div class="entry-top"><span class="entry-title">${esc(e.title)}${e.password?' 🔒':''} <span style="color:var(--ink-soft); font-weight:400;">· ${esc(e.author||'')}</span></span><span class="entry-date">${fmtDate(e.startDate)} ~ ${fmtDate(e.endDate)}</span></div>
+          ${isEntryLocked(e) ? lockOverlayHtml(e) : `
           <div class="entry-meta"><span class="stars">${'★'.repeat(e.rating||0)}${'☆'.repeat(5-(e.rating||0))}</span></div>
           ${e.quote ? `<div class="quote-block">"${esc(e.quote)}"</div>` : ''}
           <div class="entry-body">${esc(e.review)}</div>
-          ${revisionsHtml(e)}
-          ${feedbackHtml(e)}
+          ${revisionsHtml(e)}${feedbackHtml(e)}`}
         </div>`).join('')}</div>` : `<div class="empty"><div class="big">📚</div>아직 완독한 책이 없어요.</div>`}
     `;
     bindRevisionToggles(panel);
+    bindLockOverlays(panel, ()=>renderBookTab(panel));
     let rating = 0;
     const stars = panel.querySelectorAll('#b-stars span');
     stars.forEach(s=>{
@@ -968,15 +1021,18 @@ const db = firebase.firestore();
       const end = document.getElementById('b-end').value;
       const quote = document.getElementById('b-quote').value.trim();
       const review = document.getElementById('b-review').value.trim();
+      const pw = panel.querySelector('.entry-pw-field')?.value.trim() || '';
       if(!title || !review){ toast('책 제목과 감상을 입력해 주세요.'); return; }
       const dup = state.record.entries.find(e=> e.type==='book' && e.title===title && e.review===review);
       if(dup){ toast('이미 같은 내용의 기록이 있어요.'); return; }
       saving = true;
       btnSaving(btn);
-      state.record.entries.push({ id:uid(), type:'book', date:end||todayStr(), createdAt:Date.now(), title, author, startDate:start, endDate:end, quote, review, rating, feedback:null });
+      const entry = { id:uid(), type:'book', date:end||todayStr(), createdAt:Date.now(), title, author, startDate:start, endDate:end, quote, review, rating, feedback:null };
+      if(pw) entry.password = pw;
+      state.record.entries.push(entry);
       const ok = await saveRecord(state.studentName, state.record);
       saving = false;
-      if(ok){ btnDone(btn); toast('완독 기록을 저장했어요.'); setTimeout(()=>render(), 1200); }
+      if(ok){ btnDone(btn); toast(pw ? '비밀 완독 기록을 저장했어요. 🔒' : '완독 기록을 저장했어요.'); setTimeout(()=>render(), 1200); }
       else { btnReset(btn); state.record.entries.pop(); }
     };
   }
@@ -985,29 +1041,36 @@ const db = firebase.firestore();
     const wk = getWeekKey(todayStr());
     const frees = state.record.entries.filter(e=>e.type==='free').sort((a,b)=> b.createdAt-a.createdAt);
     const thisWeek = frees.find(e=>e.weekKey===wk);
+    const thisWeekLocked = thisWeek && isEntryLocked(thisWeek);
     panel.innerHTML = `
       <div class="section-title serif">${esc(sectionLabel('free'))} · 이번 주 글쓰기</div>
       <div class="section-desc">일주일에 한 편, 주제 제한 없이 자유롭게 써 보세요.</div>
       <div class="weeklock">${thisWeek ? '✅ 이번 주 글을 이미 썼어요. 아래에서 수정할 수 있어요.' : '✏️ 이번 주 글을 아직 쓰지 않았어요.'}</div>
-      <div class="field"><label>제목</label><input id="f-title" value="${esc(thisWeek?.title||'')}" placeholder="글의 제목을 지어 주세요"/></div>
-      <div class="field"><label>내용</label><textarea id="f-content" style="min-height:200px;" placeholder="무엇에 대해 써도 좋아요. 이번 주에 있었던 일, 읽은 책에 대한 생각, 상상 이야기...">${esc(thisWeek?.content||'')}</textarea></div>
-      <button class="btn btn-primary" id="f-save">${thisWeek?'수정해서 저장':'이번 주 글쓰기 저장'}</button>
+      ${thisWeekLocked ? `
+        <div id="free-lock-area">${lockOverlayHtml(thisWeek)}</div>
+      ` : `
+        <div class="field"><label>제목</label><input id="f-title" value="${esc(thisWeek?.title||'')}" placeholder="글의 제목을 지어 주세요"/></div>
+        <div class="field"><label>내용</label><textarea id="f-content" style="min-height:200px;" placeholder="무엇에 대해 써도 좋아요. 이번 주에 있었던 일, 읽은 책에 대한 생각, 상상 이야기...">${esc(thisWeek?.content||'')}</textarea></div>
+        ${!thisWeek ? pwFieldHtml('🔒 비밀번호 설정') : ''}
+        <button class="btn btn-primary" id="f-save">${thisWeek?'수정해서 저장':'이번 주 글쓰기 저장'}</button>
+      `}
       <div class="divider"></div>
       <div class="section-title serif" style="font-size:15px;">지난 글들</div>
       ${frees.filter(e=>e.weekKey!==wk).length ? `<div class="entry-list">${frees.filter(e=>e.weekKey!==wk).map(e=>`
         <div class="entry type-free">
-          <div class="entry-top"><span class="entry-title">${esc(e.title)}</span><span class="entry-date">${fmtDate(e.date)}</span></div>
-          <div class="entry-body">${esc(e.content)}</div>
-          ${revisionsHtml(e)}
-          ${feedbackHtml(e)}
+          <div class="entry-top"><span class="entry-title">${esc(e.title)}${e.password?' 🔒':''}</span><span class="entry-date">${fmtDate(e.date)}</span></div>
+          ${isEntryLocked(e) ? lockOverlayHtml(e) : `<div class="entry-body">${esc(e.content)}</div>${revisionsHtml(e)}${feedbackHtml(e)}`}
         </div>`).join('')}</div>` : `<div class="empty"><div class="big">✒️</div>지난 글이 아직 없어요.</div>`}
     `;
     bindRevisionToggles(panel);
-    document.getElementById('f-save').onclick = async () => {
+    bindLockOverlays(panel, ()=>renderFreeTab(panel));
+    const fSave = document.getElementById('f-save');
+    if(fSave) fSave.onclick = async () => {
       if(saving) return;
-      const btn = document.getElementById('f-save');
+      const btn = fSave;
       const title = document.getElementById('f-title').value.trim();
       const content = document.getElementById('f-content').value.trim();
+      const pw = panel.querySelector('.entry-pw-field')?.value.trim() || '';
       if(!title || !content){ toast('제목과 내용을 입력해 주세요.'); return; }
       if(thisWeek && thisWeek.title === title && thisWeek.content === content){
         toast('변경된 내용이 없어요.'); return;
@@ -1019,20 +1082,19 @@ const db = firebase.firestore();
         thisWeek.revisions.push({ title: thisWeek.title, content: thisWeek.content, date: thisWeek.date, at: Date.now() });
         thisWeek.title = title; thisWeek.content = content; thisWeek.date = todayStr();
       } else {
-        state.record.entries.push({ id:uid(), type:'free', date:todayStr(), createdAt:Date.now(), weekKey:wk, title, content, feedback:null });
+        const entry = { id:uid(), type:'free', date:todayStr(), createdAt:Date.now(), weekKey:wk, title, content, feedback:null };
+        if(pw) entry.password = pw;
+        state.record.entries.push(entry);
       }
       const ok = await saveRecord(state.studentName, state.record);
       saving = false;
-      if(ok){ btnDone(btn); toast('이번 주 글을 저장했어요.'); setTimeout(()=>render(), 1200); }
+      if(ok){ btnDone(btn); toast(pw ? '비밀 글을 저장했어요. 🔒' : '이번 주 글을 저장했어요.'); setTimeout(()=>render(), 1200); }
       else { btnReset(btn); }
     };
   }
 
   function renderMemoTab(panel){
     const memos = state.record.entries.filter(e=>e.type==='memo').sort((a,b)=>b.createdAt-a.createdAt);
-    // 이 세션에서 비밀번호 해제된 메모 id 목록
-    if(!state.unlockedMemos) state.unlockedMemos = {};
-
     panel.innerHTML = `
       <div class="section-title serif">쓰다 · 일상 메모</div>
       <div class="section-desc">순간순간의 생각과 일상을 자유롭게 기록해요. 비밀번호를 설정하면 나만 볼 수 있어요.</div>
@@ -1040,10 +1102,7 @@ const db = firebase.firestore();
         <div class="memo-compose">
           <div class="memo-compose-label">✏️ 오늘 ${fmtDate(todayStr())} — 새 메모 작성</div>
           <textarea id="memo-new-content" placeholder="지금 이 순간을 기록해 보세요..."></textarea>
-          <div class="field" style="margin-top:10px;">
-            <label>🔒 비밀번호 설정 <span style="font-weight:400;color:var(--ink-soft);">(선택 · 비워두면 공개)</span></label>
-            <input id="memo-new-pw" type="password" placeholder="비밀번호 입력 (선택사항)" maxlength="20" autocomplete="new-password"/>
-          </div>
+          ${pwFieldHtml('🔒 비밀번호 설정')}
           <div class="memo-save-row">
             <button class="btn btn-primary" id="memo-new-save" style="font-size:13px;padding:8px 18px;">저장</button>
           </div>
@@ -1051,28 +1110,18 @@ const db = firebase.firestore();
       </div>
       <div id="memo-list">
         ${memos.length ? memos.map((m)=>{
-          const isLocked = !!m.password;
-          const isUnlocked = state.unlockedMemos[m.id];
-          const showContent = !isLocked || isUnlocked;
+          const locked = isEntryLocked(m);
           return `<div class="memo-card" id="mcard-${m.id}">
             <div class="memo-card-head" data-id="${m.id}">
-              <span class="memo-card-date">${fmtDateFull(m.date)}${m.updatedAt ? ' · 수정됨' : ''}${isLocked ? ' 🔒' : ''}</span>
-              <span class="memo-card-preview">${isLocked && !isUnlocked ? '비밀 메모예요' : esc(m.content.replace(/\n/g,' '))}</span>
+              <span class="memo-card-date">${fmtDateFull(m.date)}${m.updatedAt ? ' · 수정됨' : ''}${m.password?' 🔒':''}</span>
+              <span class="memo-card-preview">${locked ? '비밀 메모예요' : esc(m.content.replace(/\n/g,' '))}</span>
               <div class="memo-card-actions">
-                ${showContent ? `<button class="memo-btn memo-btn-edit" data-id="${m.id}">수정</button>` : ''}
+                ${!locked ? `<button class="memo-btn memo-btn-edit" data-id="${m.id}">수정</button>` : ''}
                 <button class="memo-btn memo-btn-del" data-id="${m.id}">삭제</button>
               </div>
             </div>
             <div class="memo-body hidden" id="mbody-${m.id}">
-              ${isLocked && !isUnlocked ? `
-                <div style="padding:14px 0 4px;">
-                  <div style="font-size:13px;color:var(--ink-soft);margin-bottom:8px;">🔒 비밀번호를 입력해야 볼 수 있어요.</div>
-                  <div style="display:flex;gap:8px;">
-                    <input type="password" class="memo-pw-input" data-id="${m.id}" placeholder="비밀번호" maxlength="20" style="flex:1;border:1px solid var(--paper-line);border-radius:8px;padding:8px 10px;font-size:14px;"/>
-                    <button class="memo-btn memo-btn-edit memo-pw-confirm" data-id="${m.id}" style="padding:8px 14px;">확인</button>
-                  </div>
-                  <div class="memo-pw-err" id="mpwerr-${m.id}" style="color:var(--clay);font-size:12.5px;margin-top:6px;min-height:16px;"></div>
-                </div>` : `
+              ${locked ? lockOverlayHtml(m) : `
               <div class="memo-content-view" id="mview-${m.id}">${esc(m.content)}</div>
               <textarea class="memo-editor hidden" id="medit-${m.id}">${esc(m.content)}</textarea>
               <div class="memo-save-row hidden" id="msave-${m.id}">
@@ -1090,7 +1139,7 @@ const db = firebase.firestore();
       if(saving) return;
       const content = document.getElementById('memo-new-content').value.trim();
       if(!content){ toast('내용을 입력해 주세요.'); return; }
-      const pw = document.getElementById('memo-new-pw').value.trim();
+      const pw = panel.querySelector('.entry-pw-field')?.value.trim() || '';
       const btn = document.getElementById('memo-new-save');
       saving = true; btnSaving(btn);
       const entry = { id:uid(), type:'memo', date:todayStr(), createdAt:Date.now(), content };
@@ -1098,44 +1147,19 @@ const db = firebase.firestore();
       state.record.entries.push(entry);
       const ok = await saveRecord(state.studentName, state.record);
       saving = false;
-      if(ok){ btnDone(btn); toast(pw ? '비밀 메모를 저장했어요. 🔒' : '메모를 저장했어요.'); setTimeout(()=>{ state.unlockedMemos = {}; render(); }, 1000); }
+      if(ok){ btnDone(btn); toast(pw ? '비밀 메모를 저장했어요. 🔒' : '메모를 저장했어요.'); setTimeout(()=>render(), 1000); }
       else { btnReset(btn); state.record.entries.pop(); }
     };
 
     // 카드 헤더 클릭 → 본문 토글
     panel.querySelectorAll('.memo-card-head').forEach(h=>{
-      h.onclick = (e)=>{
-        if(e.target.closest('button')) return;
-        const id = h.dataset.id;
-        document.getElementById('mbody-'+id).classList.toggle('hidden');
-      };
+      h.onclick = (e)=>{ if(e.target.closest('button')) return; document.getElementById('mbody-'+h.dataset.id).classList.toggle('hidden'); };
     });
 
-    // 비밀번호 확인
-    panel.querySelectorAll('.memo-pw-confirm').forEach(btn=>{
-      const confirm_pw = ()=>{
-        const id = btn.dataset.id;
-        const input = panel.querySelector(`.memo-pw-input[data-id="${id}"]`);
-        const entry = state.record.entries.find(e=>e.id===id);
-        if(!entry) return;
-        if(input.value === entry.password){
-          state.unlockedMemos[id] = true;
-          renderMemoTab(panel);
-          document.getElementById('mbody-'+id)?.classList.remove('hidden');
-        } else {
-          document.getElementById('mpwerr-'+id).textContent = '비밀번호가 틀렸어요.';
-          input.value = '';
-          input.focus();
-        }
-      };
-      btn.onclick = confirm_pw;
-      const input = panel.querySelector(`.memo-pw-input[data-id="${btn.dataset.id}"]`);
-      if(input) input.addEventListener('keydown', e=>{ if(e.key==='Enter') confirm_pw(); });
-    });
+    bindLockOverlays(panel, ()=>renderMemoTab(panel));
 
     // 수정 버튼
     panel.querySelectorAll('.memo-btn-edit').forEach(btn=>{
-      if(btn.classList.contains('memo-pw-confirm')) return;
       btn.onclick = ()=>{
         const id = btn.dataset.id;
         document.getElementById('mbody-'+id).classList.remove('hidden');
@@ -1169,8 +1193,7 @@ const db = firebase.firestore();
         if(!entry) return;
         if(entry.content === content){ toast('변경된 내용이 없어요.'); return; }
         saving = true; btnSaving(btn);
-        entry.content = content;
-        entry.updatedAt = Date.now();
+        entry.content = content; entry.updatedAt = Date.now();
         const ok = await saveRecord(state.studentName, state.record);
         saving = false;
         if(ok){ btnDone(btn); toast('메모를 수정했어요.'); setTimeout(()=>render(), 1000); }
@@ -1184,8 +1207,7 @@ const db = firebase.firestore();
         if(saving) return;
         const id = btn.dataset.id;
         const entry = state.record.entries.find(e=>e.id===id);
-        const isLocked = !!entry?.password && !state.unlockedMemos[id];
-        if(isLocked){
+        if(isEntryLocked(entry)){
           toast('비밀번호를 먼저 확인해야 삭제할 수 있어요.');
           document.getElementById('mbody-'+id)?.classList.remove('hidden');
           return;
