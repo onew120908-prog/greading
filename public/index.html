@@ -1106,7 +1106,10 @@ const db = firebase.firestore();
         <div class="field"><label>제목</label><input id="f-title" value="${esc(thisWeek?.title||'')}" placeholder="글의 제목을 지어 주세요"/></div>
         <div class="field"><label>내용 <span id="f-charcount" style="font-weight:400;color:var(--ink-soft);"></span></label><textarea id="f-content" style="min-height:200px;" placeholder="무엇에 대해 써도 좋아요. 이번 주에 있었던 일, 읽은 책에 대한 생각, 상상 이야기...">${esc(thisWeek?.content||'')}</textarea></div>
         ${!thisWeek ? pwFieldHtml('🔒 비밀번호 설정') : ''}
-        <button class="btn btn-primary" id="f-save">${thisWeek?'수정해서 저장':'이번 주 글쓰기 저장'}</button>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;">
+          <button class="btn btn-primary" id="f-save">${thisWeek?'수정해서 저장':'이번 주 글쓰기 저장'}</button>
+          ${thisWeek ? `<button class="btn btn-ghost entry-del-btn" data-id="${thisWeek.id}" style="color:var(--clay);">이번 주 글 삭제</button>` : ''}
+        </div>
       `}
       <div class="divider"></div>
       <div class="section-title serif" style="font-size:15px;">지난 글들</div>
