@@ -1276,17 +1276,20 @@ const db = firebase.firestore();
       ${all.length ? `<div class="entry-list">${all.map(e=>{
         const title = e.type==='daily'? e.bookTitle : e.title;
         const body = e.type==='daily'? e.note : (e.type==='book'? e.review : e.content);
+        const locked = isEntryLocked(e);
         return `<div class="entry type-${e.type}">
-          <div class="entry-top">${entryBadge(e.type)}<span class="entry-date">${fmtDate(e.date)}</span></div>
+          <div class="entry-top">${entryBadge(e.type)}${e.password?' 🔒':''}<span class="entry-date">${fmtDate(e.date)}</span></div>
+          ${locked ? lockOverlayHtml(e) : `
           <div class="entry-title" style="margin-top:6px;">${esc(title)}</div>
           ${e.type==='book' && e.quote ? `<div class="quote-block">"${esc(e.quote)}"</div>` : ''}
           <div class="entry-body">${esc(body)}</div>
           ${revisionsHtml(e)}
-          ${feedbackHtml(e)}
+          ${feedbackHtml(e)}`}
         </div>`;
       }).join('')}</div>` : `<div class="empty"><div class="big">📔</div>아직 쌓인 기록이 없어요.</div>`}
     `;
     bindRevisionToggles(panel);
+    bindLockOverlays(panel, ()=>renderMineTab(panel));
   }
 
   // ---------- teacher ----------
