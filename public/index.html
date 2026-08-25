@@ -829,17 +829,25 @@ const db = firebase.firestore();
           <p class="hint">처음이라면 이름을 입력해 새 기록장을 만들고, 이미 쓰고 있었다면 같은 이름을 입력해 이어서 써요.</p>
           <div class="field">
             <label>이름</label>
-            <input id="nm" type="text" placeholder="예: 24기김민준" maxlength="20" />
+            <input id="nm" type="text" placeholder="예: 24기김민준" maxlength="10" />
+            <div style="font-size:12.5px;color:var(--ink-soft);margin-top:6px;">띄어쓰기 없이 <b>기수+기+이름</b> 형식으로 입력해 주세요.<br/>예) 22기홍길동 / 23기이수연 / 24기박지훈</div>
           </div>
+          <div id="nm-err" style="color:var(--clay);font-size:13px;min-height:18px;margin-bottom:4px;"></div>
           <button class="btn btn-primary btn-block" id="go">기록장 열기</button>
         </div>
       </div>`;
     document.getElementById('home').onclick = () => { state.role=null; render(); };
     const nm = document.getElementById('nm');
     nm.focus();
+    const nmErr = document.getElementById('nm-err');
     const submit = async () => {
       const v = nm.value.trim();
-      if(!v){ toast('이름을 입력해 주세요.'); return; }
+      if(!v){ nmErr.textContent = '이름을 입력해 주세요.'; return; }
+      if(!/^(22|23|24)기[가-힣]{2,4}$/.test(v)){
+        nmErr.textContent = '형식이 맞지 않아요. 예) 22기홍길동 · 23기이수연 · 24기박지훈 (띄어쓰기 없이)';
+        return;
+      }
+      nmErr.textContent = '';
       state.loading = true;
       await loadConfig();
       await ensureStudent(v);
