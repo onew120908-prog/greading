@@ -939,6 +939,25 @@ const db = firebase.firestore();
     });
   }
 
+  function bindDeleteButtons(container, label, rerender){
+    container.querySelectorAll('.entry-del-btn').forEach(btn=>{
+      btn.onclick = async ()=>{
+        if(saving) return;
+        const id = btn.dataset.id;
+        const entry = state.record.entries.find(e=>e.id===id);
+        if(!entry) return;
+        if(isEntryLocked(entry)){ toast('비밀번호를 먼저 확인해야 삭제할 수 있어요.'); return; }
+        if(!confirm(`이 ${label}을 삭제할까요? 되돌릴 수 없어요.`)) return;
+        saving = true;
+        state.record.entries = state.record.entries.filter(e=>e.id!==id);
+        const ok = await saveRecord(state.studentName, state.record);
+        saving = false;
+        if(ok){ toast(`${label}을 삭제했어요.`); rerender(); }
+        else { state.record.entries.push(entry); toast('저장에 실패했어요.'); }
+      };
+    });
+  }
+
   function renderDailyTab(panel){
     const todays = state.record.entries.filter(e=>e.type==='daily').sort((a,b)=> b.createdAt-a.createdAt);
     panel.innerHTML = `
@@ -955,13 +974,14 @@ const db = firebase.firestore();
       <div class="section-title serif" style="font-size:15px;">최근 기록</div>
       ${todays.length ? `<div class="entry-list">${todays.slice(0,6).map(e=>`
         <div class="entry type-daily">
-          <div class="entry-top"><span class="entry-title">${esc(e.bookTitle)}${e.password?' 🔒':''}</span><span class="entry-date">${fmtDate(e.date)}</span></div>
+          <div class="entry-top"><span class="entry-title">${esc(e.bookTitle)}${e.password?' 🔒':''}</span><div style="display:flex;align-items:center;gap:8px;"><span class="entry-date">${fmtDate(e.date)}</span><button class="btn btn-ghost btn-sm entry-del-btn" data-id="${e.id}" style="color:var(--clay);font-size:12px;padding:2px 8px;">삭제</button></div></div>
           <div class="entry-meta">읽은 범위: ${esc(e.pagesRead||'-')}</div>
           ${isEntryLocked(e) ? lockOverlayHtml(e) : `<div class="entry-body">${esc(e.note)}</div>${revisionsHtml(e)}${feedbackHtml(e)}`}
         </div>`).join('')}</div>` : `<div class="empty"><div class="big">🗒️</div>아직 기록이 없어요. 오늘부터 시작해 볼까요?</div>`}
     `;
     bindRevisionToggles(panel);
     bindLockOverlays(panel, ()=>renderDailyTab(panel));
+    bindDeleteButtons(panel, '기록', ()=>renderDailyTab(panel));
     document.getElementById('d-save').onclick = async () => {
       if(saving) return;
       const btn = document.getElementById('d-save');
@@ -1018,7 +1038,7 @@ const db = firebase.firestore();
       <div class="section-title serif" style="font-size:15px;">읽은 책들</div>
       ${books.length ? `<div class="entry-list">${books.map(e=>`
         <div class="entry type-book">
-          <div class="entry-top"><span class="entry-title">${esc(e.title)}${e.password?' 🔒':''} <span style="color:var(--ink-soft); font-weight:400;">· ${esc(e.author||'')}</span></span><span class="entry-date">${fmtDate(e.startDate)} ~ ${fmtDate(e.endDate)}</span></div>
+          <div class="entry-top"><span class="entry-title">${esc(e.title)}${e.password?' 🔒':''} <span style="color:var(--ink-soft); font-weight:400;">· ${esc(e.author||'')}</span></span><div style="display:flex;align-items:center;gap:8px;"><span class="entry-date">${fmtDate(e.startDate)} ~ ${fmtDate(e.endDate)}</span><button class="btn btn-ghost btn-sm entry-del-btn" data-id="${e.id}" style="color:var(--clay);font-size:12px;padding:2px 8px;">삭제</button></div></div>
           ${isEntryLocked(e) ? lockOverlayHtml(e) : `
           <div class="entry-meta"><span class="stars">${'★'.repeat(e.rating||0)}${'☆'.repeat(5-(e.rating||0))}</span></div>
           ${e.quote ? `<div class="quote-block">"${esc(e.quote)}"</div>` : ''}
@@ -1028,6 +1048,7 @@ const db = firebase.firestore();
     `;
     bindRevisionToggles(panel);
     bindLockOverlays(panel, ()=>renderBookTab(panel));
+    bindDeleteButtons(panel, '완독 기록', ()=>renderBookTab(panel));
     const bReview = document.getElementById('b-review');
     const bCharcount = document.getElementById('b-charcount');
     if(bReview && bCharcount){
@@ -1091,12 +1112,13 @@ const db = firebase.firestore();
       <div class="section-title serif" style="font-size:15px;">지난 글들</div>
       ${frees.filter(e=>e.weekKey!==wk).length ? `<div class="entry-list">${frees.filter(e=>e.weekKey!==wk).map(e=>`
         <div class="entry type-free">
-          <div class="entry-top"><span class="entry-title">${esc(e.title)}${e.password?' 🔒':''}</span><span class="entry-date">${fmtDate(e.date)}</span></div>
+          <div class="entry-top"><span class="entry-title">${esc(e.title)}${e.password?' 🔒':''}</span><div style="display:flex;align-items:center;gap:8px;"><span class="entry-date">${fmtDate(e.date)}</span><button class="btn btn-ghost btn-sm entry-del-btn" data-id="${e.id}" style="color:var(--clay);font-size:12px;padding:2px 8px;">삭제</button></div></div>
           ${isEntryLocked(e) ? lockOverlayHtml(e) : `<div class="entry-body">${esc(e.content)}</div>${revisionsHtml(e)}${feedbackHtml(e)}`}
         </div>`).join('')}</div>` : `<div class="empty"><div class="big">✒️</div>지난 글이 아직 없어요.</div>`}
     `;
     bindRevisionToggles(panel);
     bindLockOverlays(panel, ()=>renderFreeTab(panel));
+    bindDeleteButtons(panel, '글', ()=>renderFreeTab(panel));
     const fContent = document.getElementById('f-content');
     const fCharcount = document.getElementById('f-charcount');
     if(fContent && fCharcount){
