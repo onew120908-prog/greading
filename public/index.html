@@ -378,6 +378,7 @@
   .cal-cell.got .sticker { font-size: 17px; }
   .cal-cell.got-free { background: #FFF0F0; border-color: #E87070; color: #8B2020; }
   .cal-cell.got-book { background: #F5F0FF; border-color: #9B70C8; color: #4A2080; }
+  .cal-cell.got-vocab { background: #F0FFF4; border-color: #66BB6A; color: #1B5E20; }
   .cal-cell.got-multi { background: var(--gold-soft); border-color: var(--gold); color: #7A5A16; }
   .sticker-row { display: flex; justify-content: center; gap: 1px; flex-wrap: wrap; font-size: 13px; line-height: 1; }
   .cal-cell.miss { background: #F7F3EA; color: #C3B89E; }
@@ -562,6 +563,7 @@ const db = firebase.firestore();
     const dailyDates = new Set(record.entries.filter(e=>e.type==='daily').map(e=>e.date));
     const freeDates  = new Set(record.entries.filter(e=>e.type==='free').map(e=>e.date));
     const bookDates  = new Set(record.entries.filter(e=>e.type==='book').map(e=>e.date));
+    const vocabDates = new Set((record.vocabHistory||[]).filter(v=>v.passed).map(v=>v.date));
     const firstDow = new Date(y, m-1, 1).getDay();
     const cells = [];
     for(let i=0;i<firstDow;i++) cells.push(null);
@@ -572,8 +574,9 @@ const db = firebase.firestore();
       const has = dailyDates.has(ds);
       const hasFree = freeDates.has(ds);
       const hasBook = bookDates.has(ds);
+      const hasVocab = vocabDates.has(ds);
       if(!isFuture){ elapsed++; if(has) got++; }
-      cells.push({ day:d, date:ds, has, hasFree, hasBook, isFuture, isToday: ds===todayS });
+      cells.push({ day:d, date:ds, has, hasFree, hasBook, hasVocab, isFuture, isToday: ds===todayS });
     }
     const isCurrentMonth = ym === monthKey(todayS);
     return { y, m, dim, cells, got, elapsed, isCurrentMonth };
@@ -592,7 +595,7 @@ const db = firebase.firestore();
         ${weekdayNames.map(w=>`<div class="cal-wd">${w}</div>`).join('')}
         ${stats.cells.map(c=>{
           if(!c) return `<div class="cal-cell empty-cell"></div>`;
-          const anySticker = !c.isFuture && (c.has || c.hasFree || c.hasBook);
+          const anySticker = !c.isFuture && (c.has || c.hasFree || c.hasBook || c.hasVocab);
           let cls = '';
           if(c.isFuture) cls = '';
           else if(c.has && (c.hasFree || c.hasBook)) cls = 'got-multi';
@@ -600,11 +603,13 @@ const db = firebase.firestore();
           else if(c.hasFree && c.hasBook) cls = 'got-multi';
           else if(c.hasFree) cls = 'got-free';
           else if(c.hasBook) cls = 'got-book';
+          else if(c.hasVocab) cls = 'got-vocab';
           else cls = 'miss';
           const stickers = !c.isFuture ? [
-            c.has     ? '⭐' : '',
-            c.hasFree ? '<span style="color:#E87070;">★</span>' : '',
-            c.hasBook ? '<span style="color:#9B70C8;">★</span>' : '',
+            c.has      ? '⭐' : '',
+            c.hasFree  ? '<span style="color:#E87070;">★</span>' : '',
+            c.hasBook  ? '<span style="color:#9B70C8;">★</span>' : '',
+            c.hasVocab ? '<span style="color:#2E7D32;">★</span>' : '',
           ].filter(Boolean).join('') : '';
           return `<div class="cal-cell ${cls} ${c.isToday?'today':''}">${anySticker ? `<div class="sticker-row">${stickers}</div>` : `<span class="num">${c.day}</span>`}</div>`;
         }).join('')}
@@ -1412,12 +1417,19 @@ const db = firebase.firestore();
     if(sess.idx >= sess.total){
       // 결과 화면
       const pct = Math.round(sess.score/sess.total*100);
+      if(!sess.saved && (sess.mode==='meaning'||sess.mode==='blank') && pct>=70){
+        sess.saved = true;
+        const today = todayStr();
+        if(!state.record.vocabHistory) state.record.vocabHistory = [];
+        state.record.vocabHistory.push({ date: today, mode: sess.mode, score: sess.score, total: sess.total, pct, passed: true });
+        saveRecord(state.studentName, state.record).catch(()=>{});
+      }
       panel.innerHTML = `
         <div class="section-title serif">익히다 · 결과</div>
         <div class="vocab-result">
           <div class="score">${sess.score} / ${sess.total}</div>
           <div style="font-size:15px;margin-top:8px;color:var(--ink);">${pct>=80?'훌륭해요! 🎉':pct>=60?'잘 했어요! 👍':'다시 한 번 도전해 봐요 💪'}</div>
-          <div style="font-size:13px;color:var(--ink-soft);margin-top:4px;">정답률 ${pct}%</div>
+          <div style="font-size:13px;color:var(--ink-soft);margin-top:4px;">정답률 ${pct}%${pct>=70&&(sess.mode==='meaning'||sess.mode==='blank')?' · 🟢 쌓다에 초록 별 기록됨':''}</div>
         </div>
         <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:10px;">
           <button class="btn btn-primary" id="vocab-retry">다시 하기</button>
@@ -1601,6 +1613,28 @@ const db = firebase.firestore();
         <div class="section-title serif" style="font-size:20px;">${esc(state.teacherSelected)}님의 기록</div>
         <div class="section-desc">각 기록 아래 칸에 피드백을 남기고 저장하세요.</div>
         <div class="cal-mini-wrap">${calendarHtml(cs, 'tcal')}</div>
+        ${(state.record.vocabHistory && state.record.vocabHistory.length) ? `
+        <div style="margin-bottom:16px;">
+          <div class="section-title serif" style="font-size:16px;margin-bottom:6px;">익히다 학습 기록 <span style="color:#2E7D32;">★</span></div>
+          <div style="border:1px solid var(--paper-line);border-radius:12px;overflow:hidden;">
+            <table style="width:100%;border-collapse:collapse;font-size:13px;">
+              <thead><tr style="background:var(--paper-bg);border-bottom:1px solid var(--paper-line);">
+                <th style="padding:8px 10px;text-align:left;">날짜</th>
+                <th style="padding:8px 10px;text-align:left;">모드</th>
+                <th style="padding:8px 10px;text-align:center;">점수</th>
+                <th style="padding:8px 10px;text-align:center;">정답률</th>
+              </tr></thead>
+              <tbody>${[...state.record.vocabHistory].reverse().map(v=>`
+                <tr style="border-bottom:1px solid var(--paper-line);">
+                  <td style="padding:7px 10px;">${fmtDate(v.date)}</td>
+                  <td style="padding:7px 10px;">${v.mode==='meaning'?'뜻→단어':v.mode==='blank'?'빈칸 채우기':'플래시카드'}</td>
+                  <td style="padding:7px 10px;text-align:center;">${v.score}/${v.total}</td>
+                  <td style="padding:7px 10px;text-align:center;color:${v.pct>=70?'#1B5E20':'#8B2020'};font-weight:600;">${v.pct}%</td>
+                </tr>`).join('')}
+              </tbody>
+            </table>
+          </div>
+        </div>` : ''}
         ${all.length ? `<div class="entry-list">${all.map(e=>{
           const title = e.type==='daily'? e.bookTitle : e.title;
           const body = e.type==='daily'? e.note : (e.type==='book'? e.review : e.content);
