@@ -1701,6 +1701,15 @@ const db = firebase.firestore();
           <div class="field"><label>예문 <span style="font-weight:400;color:var(--ink-soft);">(선택)</span></label><input id="v-example" placeholder="예: 이 시에는 시각적 심상이 두드러진다."/></div>
           <button class="btn btn-primary btn-sm" id="v-add" style="margin-top:4px;">단어 추가</button>
           <div class="divider" style="margin:14px 0 10px;"></div>
+          <details style="margin-bottom:10px;">
+            <summary style="cursor:pointer;font-size:13px;color:var(--ink-soft);font-weight:600;">📋 여러 단어 한꺼번에 붙여넣기</summary>
+            <div style="margin-top:10px;">
+              <div style="font-size:12.5px;color:var(--ink-soft);margin-bottom:6px;">한 줄에 하나씩, <b>단어/뜻/예문</b> 형식으로 입력하세요. 예문은 생략 가능해요.<br/>예) 심상/마음속에 떠오르는 이미지나 느낌/이 시에는 시각적 심상이 두드러진다.</div>
+              <textarea id="v-bulk" style="width:100%;min-height:120px;font-size:12.5px;border:1px solid var(--paper-line);border-radius:8px;padding:8px;" placeholder="단어/뜻/예문&#10;단어/뜻/예문&#10;..."></textarea>
+              <button class="btn btn-primary btn-sm" id="v-bulk-add" style="margin-top:6px;">일괄 등록</button>
+            </div>
+          </details>
+          <div class="divider" style="margin:14px 0 10px;"></div>
           <div id="v-list">
             ${vocabWords.length ? vocabWords.map(w=>`
               <div class="vocab-admin-item">
@@ -1779,6 +1788,28 @@ const db = firebase.firestore();
       });
       const ok = await saveConfig(c);
       if(ok) toast('섹션 설정이 저장되었어요.');
+    };
+
+    document.getElementById('v-bulk-add').onclick = async ()=>{
+      const raw = document.getElementById('v-bulk').value.trim();
+      if(!raw){ toast('내용을 입력해 주세요.'); return; }
+      const lines = raw.split('\n').map(l=>l.trim()).filter(Boolean);
+      const current = await loadVocab();
+      const existing = new Set(current.map(w=>w.word));
+      let added = 0, skipped = 0;
+      for(const line of lines){
+        const parts = line.split('/');
+        const word = parts[0]?.trim();
+        const meaning = parts[1]?.trim();
+        const example = parts[2]?.trim() || '';
+        if(!word || !meaning){ skipped++; continue; }
+        if(existing.has(word)){ skipped++; continue; }
+        current.push({ id: uid(), word, meaning, example });
+        existing.add(word);
+        added++;
+      }
+      const ok = await saveVocab(current);
+      if(ok){ toast(`${added}개 추가, ${skipped}개 건너뜀`); renderTeacherSettings(); }
     };
 
     document.getElementById('v-add').onclick = async ()=>{
