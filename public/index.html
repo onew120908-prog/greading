@@ -1812,6 +1812,7 @@ const db = firebase.firestore();
       if(ok){ toast(`${added}개 추가, ${skipped}개 건너뜀`); renderTeacherSettings(); }
     };
 
+
     document.getElementById('v-add').onclick = async ()=>{
       const word = document.getElementById('v-word').value.trim();
       const meaning = document.getElementById('v-meaning').value.trim();
