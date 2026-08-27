@@ -887,7 +887,12 @@ const db = firebase.firestore();
   function tabsHtml(){
     const sections = cfg().sections;
     const tabs = [...sections];
-    if(isPelchiUser()) tabs.push({ key:'pelchi', label:'펼치다', color:'#6B4FA8' });
+    if(isPelchiUser()){
+      const stickerIdx = tabs.findIndex(t=>t.key==='stickers');
+      const pelchi = { key:'pelchi', label:'펼치다', color:'#6B4FA8' };
+      if(stickerIdx >= 0) tabs.splice(stickerIdx, 0, pelchi);
+      else tabs.push(pelchi);
+    }
     return `<div class="tabbar">${tabs.map(s=>
       `<button class="tabbtn ${state.tab===s.key?'active':''}" data-tab="${s.key}" style="${state.tab===s.key?`background:${s.color};`:''}">${esc(s.label)}</button>`
     ).join('')}</div>`;
