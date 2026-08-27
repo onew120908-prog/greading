@@ -268,32 +268,23 @@
   .entry-meta { font-size: 12.5px; color: var(--ink-soft); margin-top: 2px; }
   .entry-body { font-size: 14px; line-height: 1.65; margin-top: 8px; white-space: pre-wrap; }
   .lock-overlay { text-align: center; padding: 18px 12px; background: var(--sage); border-radius: 10px; margin-top: 8px; }
-  /* ===== 익히다 (vocab) ===== */
-  .vocab-mode-btns { display: flex; gap: 8px; flex-wrap: wrap; margin: 14px 0; }
-  .vocab-mode-btn { flex: 1; min-width: 120px; padding: 12px 10px; border-radius: 12px; border: 2px solid var(--paper-line); background: #fff; font-size: 13px; font-weight: 600; cursor: pointer; text-align: center; transition: all .15s; }
-  .vocab-mode-btn:hover, .vocab-mode-btn.active { border-color: var(--forest); background: var(--sage); color: var(--forest-dark); }
-  .vocab-card { background: #fff; border: 1.5px solid var(--paper-line); border-radius: 16px; padding: 28px 20px; text-align: center; margin: 16px 0; min-height: 180px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; }
-  .vocab-word { font-family: 'Noto Serif KR', serif; font-size: 28px; font-weight: 700; color: var(--forest-dark); }
-  .vocab-meaning { font-size: 15px; color: var(--ink); line-height: 1.7; }
-  .vocab-example { font-size: 13px; color: var(--ink-soft); font-style: italic; line-height: 1.6; border-left: 3px solid var(--gold); padding-left: 10px; text-align: left; width: 100%; }
-  .vocab-blank { display: inline-block; border-bottom: 2px solid var(--forest); min-width: 60px; color: transparent; background: var(--sage); border-radius: 4px; }
-  .vocab-answer-btns { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin-top: 8px; }
-  .vocab-answer-btn { padding: 10px 20px; border-radius: 10px; border: 1.5px solid var(--paper-line); background: #fff; font-size: 13.5px; font-weight: 500; cursor: pointer; transition: all .15s; }
-  .vocab-answer-btn:hover { background: var(--sage); border-color: var(--forest); }
-  .vocab-answer-btn.correct { background: #D4EDDA; border-color: #3A8A5C; color: #1B5E2E; }
-  .vocab-answer-btn.wrong { background: #FDECEA; border-color: var(--clay); color: #8B2020; }
-  .vocab-input { border: 1.5px solid var(--paper-line); border-radius: 10px; padding: 10px 14px; font-size: 15px; width: 100%; max-width: 260px; text-align: center; }
-  .vocab-progress { font-size: 13px; color: var(--ink-soft); margin-bottom: 4px; }
-  .vocab-result { background: var(--gold-soft); border: 1.5px solid var(--gold); border-radius: 14px; padding: 20px; text-align: center; margin: 16px 0; }
-  .vocab-result .score { font-size: 36px; font-weight: 900; color: var(--forest-dark); font-family: 'Noto Serif KR', serif; }
-  .vocab-flash-btns { display: flex; gap: 12px; justify-content: center; margin-top: 12px; }
-  .vocab-flash-know { background: #D4EDDA; border: none; padding: 12px 28px; border-radius: 12px; font-size: 15px; font-weight: 700; cursor: pointer; color: #1B5E2E; }
-  .vocab-flash-dunno { background: #FDECEA; border: none; padding: 12px 28px; border-radius: 12px; font-size: 15px; font-weight: 700; cursor: pointer; color: #8B2020; }
-  .vocab-flip { cursor: pointer; user-select: none; }
-  .vocab-flip-hint { font-size: 12px; color: var(--ink-soft); margin-top: 6px; }
-  .vocab-admin-item { display: flex; align-items: center; gap: 8px; padding: 8px 0; border-bottom: 1px solid var(--paper-line); }
-  .vocab-admin-word { font-weight: 700; min-width: 80px; }
-  .vocab-admin-meaning { flex: 1; color: var(--ink-soft); font-size: 13px; }
+  /* ===== 펼치다 (worksheet) ===== */
+  .ws-card { background: var(--card); border-radius: 14px; box-shadow: var(--shadow); margin-bottom: 18px; overflow: hidden; }
+  .ws-card-head { padding: 16px 18px 10px; border-bottom: 1px solid var(--paper-line); }
+  .ws-title { font-family: 'Noto Serif KR', serif; font-size: 17px; font-weight: 700; color: var(--forest-dark); }
+  .ws-meta { font-size: 12px; color: var(--ink-soft); margin-top: 3px; }
+  .ws-body { padding: 16px 18px; }
+  .ws-section { margin-bottom: 18px; }
+  .ws-section-label { font-size: 13px; font-weight: 700; color: var(--forest); margin-bottom: 6px; display: flex; align-items: center; gap: 6px; }
+  .ws-provided { background: var(--sage); border-left: 3px solid var(--forest); padding: 12px 14px; border-radius: 0 8px 8px 0; font-size: 13.5px; line-height: 1.75; color: var(--ink); white-space: pre-wrap; }
+  .ws-textarea { width: 100%; border: 1.5px solid var(--paper-line); border-radius: 10px; padding: 10px 12px; font-size: 14px; font-family: 'Noto Sans KR', sans-serif; line-height: 1.65; resize: vertical; min-height: 90px; box-sizing: border-box; }
+  .ws-textarea:focus { outline: none; border-color: var(--forest); }
+  .ws-q { margin-bottom: 14px; }
+  .ws-q-text { font-size: 14px; font-weight: 600; color: var(--ink); margin-bottom: 6px; line-height: 1.55; }
+  .ws-submitted { background: var(--gold-soft); border: 1.5px solid var(--gold); border-radius: 10px; padding: 10px 14px; font-size: 13px; color: var(--ink); line-height: 1.6; white-space: pre-wrap; }
+  .ws-admin-item { display: flex; align-items: flex-start; gap: 8px; padding: 10px 0; border-bottom: 1px solid var(--paper-line); }
+  .ws-admin-title { font-weight: 700; flex: 1; }
+  .ws-admin-grades { font-size: 12px; color: var(--ink-soft); margin-top: 2px; }
   /* ===== 쓰다 탭 ===== */
   .memo-new-btn { display: flex; align-items: center; gap: 8px; padding: 14px 16px; background: var(--card); border: 1.5px dashed var(--forest); border-radius: 10px; color: var(--forest); font-size: 14px; font-weight: 700; cursor: pointer; width: 100%; margin-bottom: 18px; transition: background .15s; }
   .memo-new-btn:hover { background: var(--sage); }
@@ -563,7 +554,7 @@ const db = firebase.firestore();
     const dailyDates = new Set(record.entries.filter(e=>e.type==='daily').map(e=>e.date));
     const freeDates  = new Set(record.entries.filter(e=>e.type==='free').map(e=>e.date));
     const bookDates  = new Set(record.entries.filter(e=>e.type==='book').map(e=>e.date));
-    const vocabDates = new Set((record.vocabHistory||[]).filter(v=>v.passed).map(v=>v.date));
+    const wsDates = new Set(Object.values(record.worksheets||{}).filter(w=>w.submittedAt).map(w=>w.submittedAt.slice(0,10)));
     const firstDow = new Date(y, m-1, 1).getDay();
     const cells = [];
     for(let i=0;i<firstDow;i++) cells.push(null);
@@ -574,9 +565,9 @@ const db = firebase.firestore();
       const has = dailyDates.has(ds);
       const hasFree = freeDates.has(ds);
       const hasBook = bookDates.has(ds);
-      const hasVocab = vocabDates.has(ds);
+      const hasWs = wsDates.has(ds);
       if(!isFuture){ elapsed++; if(has) got++; }
-      cells.push({ day:d, date:ds, has, hasFree, hasBook, hasVocab, isFuture, isToday: ds===todayS });
+      cells.push({ day:d, date:ds, has, hasFree, hasBook, hasWs, isFuture, isToday: ds===todayS });
     }
     const isCurrentMonth = ym === monthKey(todayS);
     return { y, m, dim, cells, got, elapsed, isCurrentMonth };
@@ -595,7 +586,7 @@ const db = firebase.firestore();
         ${weekdayNames.map(w=>`<div class="cal-wd">${w}</div>`).join('')}
         ${stats.cells.map(c=>{
           if(!c) return `<div class="cal-cell empty-cell"></div>`;
-          const anySticker = !c.isFuture && (c.has || c.hasFree || c.hasBook || c.hasVocab);
+          const anySticker = !c.isFuture && (c.has || c.hasFree || c.hasBook || c.hasWs);
           let cls = '';
           if(c.isFuture) cls = '';
           else if(c.has && (c.hasFree || c.hasBook)) cls = 'got-multi';
@@ -603,13 +594,13 @@ const db = firebase.firestore();
           else if(c.hasFree && c.hasBook) cls = 'got-multi';
           else if(c.hasFree) cls = 'got-free';
           else if(c.hasBook) cls = 'got-book';
-          else if(c.hasVocab) cls = 'got-vocab';
+          else if(c.hasWs) cls = 'got-vocab';
           else cls = 'miss';
           const stickers = !c.isFuture ? [
-            c.has      ? '⭐' : '',
-            c.hasFree  ? '<span style="color:#E87070;">★</span>' : '',
-            c.hasBook  ? '<span style="color:#9B70C8;">★</span>' : '',
-            c.hasVocab ? '<span style="color:#2E7D32;">★</span>' : '',
+            c.has    ? '⭐' : '',
+            c.hasFree ? '<span style="color:#E87070;">★</span>' : '',
+            c.hasBook ? '<span style="color:#9B70C8;">★</span>' : '',
+            c.hasWs   ? '<span style="color:#2E7D32;">★</span>' : '',
           ].filter(Boolean).join('') : '';
           return `<div class="cal-cell ${cls} ${c.isToday?'today':''}">${anySticker ? `<div class="sticker-row">${stickers}</div>` : `<span class="num">${c.day}</span>`}</div>`;
         }).join('')}
@@ -729,16 +720,6 @@ const db = firebase.firestore();
     catch(e){ console.error(e); toast('설정 저장에 실패했어요.'); return false; }
   }
 
-  async function loadVocab(){
-    try {
-      const doc = await db.collection('meta').doc('vocab').get();
-      return doc.exists ? (doc.data().words || []) : [];
-    } catch(e){ return []; }
-  }
-  async function saveVocab(words){
-    try { await db.collection('meta').doc('vocab').set({ words }); return true; }
-    catch(e){ console.error(e); toast('단어 저장에 실패했어요.'); return false; }
-  }
 
   // ---------- Excel download ----------
   function downloadAllRecordsExcel(){
@@ -906,7 +887,7 @@ const db = firebase.firestore();
   function tabsHtml(){
     const sections = cfg().sections;
     const tabs = [...sections];
-    if(isVocabUser()) tabs.push({ key:'vocab', label:'익히다', color:'#4A7A9B' });
+    if(isPelchiUser()) tabs.push({ key:'pelchi', label:'펼치다', color:'#6B4FA8' });
     return `<div class="tabbar">${tabs.map(s=>
       `<button class="tabbtn ${state.tab===s.key?'active':''}" data-tab="${s.key}" style="${state.tab===s.key?`background:${s.color};`:''}">${esc(s.label)}</button>`
     ).join('')}</div>`;
@@ -930,7 +911,7 @@ const db = firebase.firestore();
     else if(state.tab==='book') renderBookTab(panel);
     else if(state.tab==='free') renderFreeTab(panel);
     else if(state.tab==='memo') renderMemoTab(panel);
-    else if(state.tab==='vocab') renderVocabTab(panel);
+    else if(state.tab==='pelchi') renderPelchiTab(panel);
     else renderMineTab(panel);
   }
 
@@ -1370,180 +1351,161 @@ const db = firebase.firestore();
     bindLockOverlays(panel, ()=>renderMineTab(panel));
   }
 
-  // ---------- 익히다 (vocab) ----------
-  function isVocabUser(){
-    return state.studentName && state.studentName.startsWith('22기');
+  // ---------- 펼치다 (worksheet) ----------
+  const BUILTIN_WORKSHEETS = [
+    {
+      id: 'odyssey-9',
+      title: '오디세이아 제9권 — 외눈박이 거인 키클롭스',
+      grades: ['22기','23기'],
+      sections: [
+        {
+          type: 'write',
+          label: '📝 내용 정리',
+          placeholder: '오디세우스 일행에게 어떤 일이 일어났는지 순서대로 정리해 보세요.'
+        },
+        {
+          type: 'provided',
+          label: '💡 감상 포인트',
+          content: `① 지혜 vs. 힘\n오디세우스는 폴리페모스의 괴력을 정면으로 이길 수 없습니다. 대신 말뚝·포도주·거짓 이름이라는 세 가지 꾀로 위기를 돌파합니다. 힘이 아니라 머리로 살아남는 인간의 가능성을 보여줍니다.\n\n② 자만심의 대가\n탈출에 성공한 뒤 오디세우스가 굳이 자기 이름을 외친 행동은 영웅적 자존심이지만, 그 한 마디가 포세이돈의 분노를 불러 10년 고난의 씨앗이 됩니다.\n\n③ 문명과 야만\n키클롭스족은 농사도, 법도, 공동체도 없습니다. 호메로스는 이 대비를 통해 인간다운 삶이란 무엇인지 묻습니다.`
+        },
+        {
+          type: 'questions',
+          label: '✅ 내용 확인 질문',
+          questions: [
+            'Q1. 오디세우스가 폴리페모스에게 자신의 이름을 "아무도 아니오"라고 말한 이유는 무엇인가요?',
+            'Q2. 오디세우스 일행은 폴리페모스의 동굴에서 어떻게 탈출했나요?',
+            'Q3. 폴리페모스는 눈을 잃고 나서 아버지 포세이돈에게 어떤 저주를 부탁했나요?'
+          ]
+        },
+        {
+          type: 'questions',
+          label: '🤔 생각해보기',
+          questions: [
+            'Q. 오디세우스가 배에서 자신의 이름을 외친 행동, 여러분은 어떻게 생각하나요? 용감한 행동인가요, 어리석은 행동인가요? 이유와 함께 자신의 생각을 써 보세요.'
+          ]
+        }
+      ]
+    }
+  ];
+
+  function isPelchiUser(){
+    return state.studentName && /^(22|23|24)기/.test(state.studentName);
   }
 
-  async function renderVocabTab(panel){
-    const words = await loadVocab();
-    if(!words.length){
-      panel.innerHTML = `<div class="section-title serif">익히다 · 어휘 공부</div><div class="empty"><div class="big">📖</div>아직 등록된 단어가 없어요.<br/>선생님이 단어를 등록하면 여기에 나타나요.</div>`;
+  function studentGrade(){
+    const m = state.studentName && state.studentName.match(/^(\d+)기/);
+    return m ? m[1]+'기' : null;
+  }
+
+  async function loadWorksheets(){
+    try {
+      const doc = await db.collection('meta').doc('worksheets').get();
+      const custom = doc.exists ? (doc.data().items || []) : [];
+      return [...BUILTIN_WORKSHEETS, ...custom];
+    } catch(e){ return [...BUILTIN_WORKSHEETS]; }
+  }
+
+  async function saveWorksheets(items){
+    try { await db.collection('meta').doc('worksheets').set({ items }); return true; }
+    catch(e){ toast('저장 실패: ' + e.message); return false; }
+  }
+
+  async function renderPelchiTab(panel){
+    const grade = studentGrade();
+    const all = await loadWorksheets();
+    const mine = all.filter(w=> w.grades && w.grades.includes(grade));
+    if(!mine.length){
+      panel.innerHTML = `<div class="section-title serif">펼치다 · 활동지</div><div class="empty"><div class="big">📄</div>아직 등록된 활동지가 없어요.<br/>선생님이 활동지를 올리면 여기에 나타나요.</div>`;
       return;
     }
+    const wsAnswers = state.record.worksheets || {};
 
-    // 오늘 이미 학습한 기록 확인
-    const todayKey = todayStr();
-    if(!state.vocabSession) state.vocabSession = null;
-
-    if(!state.vocabSession){
-      // 모드 선택 화면
-      panel.innerHTML = `
-        <div class="section-title serif">익히다 · 어휘 공부</div>
-        <div class="section-desc">등록된 단어 <b>${words.length}개</b>를 테스트해 볼 수 있어요. 방법을 선택하거나 랜덤으로 시작해 보세요.</div>
-        <div class="vocab-mode-btns">
-          <div class="vocab-mode-btn" data-mode="random">🎲 랜덤</div>
-          <div class="vocab-mode-btn" data-mode="flash">🃏 플래시카드</div>
-          <div class="vocab-mode-btn" data-mode="meaning">📌 뜻 보고 단어 맞추기</div>
-          <div class="vocab-mode-btn" data-mode="blank">📋 예문 빈칸 채우기</div>
-        </div>
-      `;
-      panel.querySelectorAll('.vocab-mode-btn').forEach(btn=>{
-        btn.onclick = ()=>{
-          let mode = btn.dataset.mode;
-          if(mode === 'random'){
-            const modes = ['flash','meaning','blank'];
-            mode = modes[Math.floor(Math.random()*modes.length)];
+    let html = `<div class="section-title serif">펼치다 · 활동지</div>`;
+    html += mine.map(ws=>{
+      const ans = wsAnswers[ws.id] || {};
+      const submitted = ans.submittedAt;
+      const sectHtml = ws.sections.map((sec,si)=>{
+        if(sec.type === 'provided'){
+          return `<div class="ws-section">
+            <div class="ws-section-label">${esc(sec.label)}</div>
+            <div class="ws-provided">${esc(sec.content)}</div>
+          </div>`;
+        }
+        if(sec.type === 'write'){
+          const val = ans[`s${si}`] || '';
+          if(submitted){
+            return `<div class="ws-section">
+              <div class="ws-section-label">${esc(sec.label)}</div>
+              <div class="ws-submitted">${esc(val)||'<span style="color:var(--ink-soft)">(미작성)</span>'}</div>
+            </div>`;
           }
-          const shuffled = [...words].sort(()=>Math.random()-0.5);
-          state.vocabSession = { mode, words: shuffled, idx: 0, score: 0, total: shuffled.length, revealed: false };
-          renderVocabTab(panel);
-        };
-      });
-      return;
-    }
+          return `<div class="ws-section">
+            <div class="ws-section-label">${esc(sec.label)}</div>
+            <textarea class="ws-textarea" data-sid="${si}" placeholder="${esc(sec.placeholder||'내용을 작성해 주세요.')}">${esc(val)}</textarea>
+          </div>`;
+        }
+        if(sec.type === 'questions'){
+          const qHtml = sec.questions.map((q,qi)=>{
+            const key = `s${si}_q${qi}`;
+            const val = ans[key] || '';
+            if(submitted){
+              return `<div class="ws-q">
+                <div class="ws-q-text">${esc(q)}</div>
+                <div class="ws-submitted">${esc(val)||'<span style="color:var(--ink-soft)">(미작성)</span>'}</div>
+              </div>`;
+            }
+            return `<div class="ws-q">
+              <div class="ws-q-text">${esc(q)}</div>
+              <textarea class="ws-textarea" data-sid="${si}" data-qid="${qi}" placeholder="답을 작성해 주세요." style="min-height:70px;">${esc(val)}</textarea>
+            </div>`;
+          }).join('');
+          return `<div class="ws-section">
+            <div class="ws-section-label">${esc(sec.label)}</div>
+            ${qHtml}
+          </div>`;
+        }
+        return '';
+      }).join('');
 
-    const sess = state.vocabSession;
-    if(sess.idx >= sess.total){
-      // 결과 화면
-      const pct = Math.round(sess.score/sess.total*100);
-      if(!sess.saved && (sess.mode==='meaning'||sess.mode==='blank') && pct>=70){
-        sess.saved = true;
-        const today = todayStr();
-        if(!state.record.vocabHistory) state.record.vocabHistory = [];
-        state.record.vocabHistory.push({ date: today, mode: sess.mode, score: sess.score, total: sess.total, pct, passed: true });
-        saveRecord(state.studentName, state.record).catch(()=>{});
-      }
-      panel.innerHTML = `
-        <div class="section-title serif">익히다 · 결과</div>
-        <div class="vocab-result">
-          <div class="score">${sess.score} / ${sess.total}</div>
-          <div style="font-size:15px;margin-top:8px;color:var(--ink);">${pct>=80?'훌륭해요! 🎉':pct>=60?'잘 했어요! 👍':'다시 한 번 도전해 봐요 💪'}</div>
-          <div style="font-size:13px;color:var(--ink-soft);margin-top:4px;">정답률 ${pct}%${pct>=70&&(sess.mode==='meaning'||sess.mode==='blank')?' · 🟢 쌓다에 초록 별 기록됨':''}</div>
+      return `<div class="ws-card" data-wsid="${esc(ws.id)}">
+        <div class="ws-card-head">
+          <div class="ws-title">${esc(ws.title)}</div>
+          <div class="ws-meta">${ws.grades.join(' · ')}${submitted ? ` · ✅ 제출 완료 (${fmtDate(submitted.slice(0,10))})` : ''}</div>
         </div>
-        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:10px;">
-          <button class="btn btn-primary" id="vocab-retry">다시 하기</button>
-          <button class="btn btn-ghost" id="vocab-mode-sel">모드 선택으로</button>
+        <div class="ws-body">
+          ${sectHtml}
+          ${!submitted ? `<button class="btn btn-primary ws-submit" data-wsid="${esc(ws.id)}" style="margin-top:6px;">활동지 제출</button>` : ''}
         </div>
-      `;
-      document.getElementById('vocab-retry').onclick = ()=>{
-        const shuffled = [...words].sort(()=>Math.random()-0.5);
-        state.vocabSession = { mode: sess.mode, words: shuffled, idx: 0, score: 0, total: shuffled.length, revealed: false };
-        renderVocabTab(panel);
+      </div>`;
+    }).join('');
+
+    panel.innerHTML = html;
+
+    panel.querySelectorAll('.ws-submit').forEach(btn=>{
+      btn.onclick = async ()=>{
+        const wsId = btn.dataset.wsid;
+        const card = btn.closest('.ws-card');
+        const ws = mine.find(w=>w.id===wsId);
+        const save = {};
+        ws.sections.forEach((sec,si)=>{
+          if(sec.type === 'write'){
+            const ta = card.querySelector(`.ws-textarea[data-sid="${si}"]`);
+            save[`s${si}`] = ta ? ta.value.trim() : '';
+          }
+          if(sec.type === 'questions'){
+            sec.questions.forEach((_,qi)=>{
+              const ta = card.querySelector(`.ws-textarea[data-sid="${si}"][data-qid="${qi}"]`);
+              save[`s${si}_q${qi}`] = ta ? ta.value.trim() : '';
+            });
+          }
+        });
+        save.submittedAt = new Date().toISOString().slice(0,10)+'T'+new Date().toTimeString().slice(0,8);
+        if(!state.record.worksheets) state.record.worksheets = {};
+        state.record.worksheets[wsId] = save;
+        const ok = await saveRecord(state.studentName, state.record);
+        if(ok){ toast('활동지를 제출했어요!'); renderPelchiTab(panel); }
       };
-      document.getElementById('vocab-mode-sel').onclick = ()=>{ state.vocabSession=null; renderVocabTab(panel); };
-      return;
-    }
-
-    const w = sess.words[sess.idx];
-    const modeLabel = { flash:'🃏 플래시카드', meaning:'📌 뜻 보고 단어 맞추기', blank:'📋 예문 빈칸 채우기' }[sess.mode] || sess.mode;
-
-    if(sess.mode === 'flash'){
-      panel.innerHTML = `
-        <div class="section-title serif">익히다 · ${modeLabel}</div>
-        <div class="vocab-progress">${sess.idx+1} / ${sess.total}</div>
-        <div class="vocab-card vocab-flip" id="vcard">
-          <div class="vocab-word">${esc(w.word)}</div>
-          ${sess.revealed ? `
-            <div class="vocab-meaning">${esc(w.meaning)}</div>
-            ${w.example ? `<div class="vocab-example">${esc(w.example)}</div>` : ''}
-          ` : `<div class="vocab-flip-hint">탭해서 뜻 보기 👆</div>`}
-        </div>
-        ${sess.revealed ? `
-          <div class="vocab-flash-btns">
-            <button class="vocab-flash-dunno" id="v-dunno">😅 몰라요</button>
-            <button class="vocab-flash-know" id="v-know">✅ 알아요</button>
-          </div>
-        ` : ''}
-        <button class="btn btn-ghost" style="margin-top:16px;" id="vocab-back">모드 선택으로</button>
-      `;
-      document.getElementById('vcard').onclick = ()=>{ sess.revealed = true; renderVocabTab(panel); };
-      if(sess.revealed){
-        document.getElementById('v-know').onclick = ()=>{ sess.score++; sess.idx++; sess.revealed=false; renderVocabTab(panel); };
-        document.getElementById('v-dunno').onclick = ()=>{ sess.idx++; sess.revealed=false; renderVocabTab(panel); };
-      }
-      document.getElementById('vocab-back').onclick = ()=>{ state.vocabSession=null; renderVocabTab(panel); };
-
-    } else if(sess.mode === 'meaning'){
-      // 뜻/예문 보고 단어 맞추기 — 객관식 4개
-      const others = words.filter(x=>x.word!==w.word).sort(()=>Math.random()-0.5).slice(0,3);
-      const choices = [...others, w].sort(()=>Math.random()-0.5);
-      panel.innerHTML = `
-        <div class="section-title serif">익히다 · ${modeLabel}</div>
-        <div class="vocab-progress">${sess.idx+1} / ${sess.total} · 점수 ${sess.score}</div>
-        <div class="vocab-card">
-          <div class="vocab-meaning" style="font-size:17px;font-weight:600;">${esc(w.meaning)}</div>
-          ${w.example ? `<div class="vocab-example">${esc(w.example.replace(w.word,'___'))}</div>` : ''}
-        </div>
-        <div class="vocab-answer-btns">
-          ${choices.map(c=>`<button class="vocab-answer-btn" data-word="${esc(c.word)}">${esc(c.word)}</button>`).join('')}
-        </div>
-        <button class="btn btn-ghost" style="margin-top:16px;" id="vocab-back">모드 선택으로</button>
-      `;
-      panel.querySelectorAll('.vocab-answer-btn').forEach(btn=>{
-        btn.onclick = ()=>{
-          if(sess.answered) return;
-          sess.answered = true;
-          const correct = btn.dataset.word === w.word;
-          if(correct) sess.score++;
-          panel.querySelectorAll('.vocab-answer-btn').forEach(b=>{
-            if(b.dataset.word===w.word) b.classList.add('correct');
-            else if(b===btn && !correct) b.classList.add('wrong');
-            b.style.pointerEvents='none';
-          });
-          setTimeout(()=>{ sess.idx++; sess.answered=false; renderVocabTab(panel); }, 1000);
-        };
-      });
-      document.getElementById('vocab-back').onclick = ()=>{ state.vocabSession=null; renderVocabTab(panel); };
-
-    } else if(sess.mode === 'blank'){
-      // 예문 빈칸 채우기
-      const exampleHtml = w.example
-        ? esc(w.example).replace(esc(w.word), `<span class="vocab-blank">${esc(w.word)}</span>`)
-        : null;
-      panel.innerHTML = `
-        <div class="section-title serif">익히다 · ${modeLabel}</div>
-        <div class="vocab-progress">${sess.idx+1} / ${sess.total} · 점수 ${sess.score}</div>
-        <div class="vocab-card">
-          <div class="vocab-meaning">${esc(w.meaning)}</div>
-          ${exampleHtml ? `<div class="vocab-example" style="font-size:15px;">${exampleHtml}</div>` : `<div class="vocab-meaning" style="color:var(--ink-soft);font-size:13px;">예문이 없어요. 뜻을 보고 단어를 입력해 주세요.</div>`}
-        </div>
-        <div style="display:flex;gap:8px;justify-content:center;align-items:center;margin-top:8px;">
-          <input class="vocab-input" id="v-blank-input" placeholder="단어를 입력하세요" autocomplete="off"/>
-          <button class="btn btn-primary" id="v-blank-submit">확인</button>
-        </div>
-        <div id="v-blank-result" style="text-align:center;min-height:24px;margin-top:10px;font-size:14px;font-weight:600;"></div>
-        <button class="btn btn-ghost" style="margin-top:16px;" id="vocab-back">모드 선택으로</button>
-      `;
-      const inp = document.getElementById('v-blank-input');
-      inp.focus();
-      const check = ()=>{
-        if(sess.answered) return;
-        const ans = inp.value.trim();
-        const correct = ans === w.word;
-        sess.answered = true;
-        if(correct) sess.score++;
-        const res = document.getElementById('v-blank-result');
-        res.textContent = correct ? `✅ 정답! "${w.word}"` : `❌ 오답. 정답은 "${w.word}"`;
-        res.style.color = correct ? '#1B5E2E' : '#8B2020';
-        inp.disabled = true;
-        document.getElementById('v-blank-submit').disabled = true;
-        setTimeout(()=>{ sess.idx++; sess.answered=false; renderVocabTab(panel); }, 1200);
-      };
-      document.getElementById('v-blank-submit').onclick = check;
-      inp.addEventListener('keydown', e=>{ if(e.key==='Enter') check(); });
-      document.getElementById('vocab-back').onclick = ()=>{ state.vocabSession=null; renderVocabTab(panel); };
-    }
+    });
   }
 
   // ---------- teacher ----------
@@ -1613,24 +1575,24 @@ const db = firebase.firestore();
         <div class="section-title serif" style="font-size:20px;">${esc(state.teacherSelected)}님의 기록</div>
         <div class="section-desc">각 기록 아래 칸에 피드백을 남기고 저장하세요.</div>
         <div class="cal-mini-wrap">${calendarHtml(cs, 'tcal')}</div>
-        ${(state.record.vocabHistory && state.record.vocabHistory.length) ? `
+        ${(state.record.worksheets && Object.keys(state.record.worksheets).length) ? `
         <div style="margin-bottom:16px;">
-          <div class="section-title serif" style="font-size:16px;margin-bottom:6px;">익히다 학습 기록 <span style="color:#2E7D32;">★</span></div>
+          <div class="section-title serif" style="font-size:16px;margin-bottom:6px;">펼치다 활동지 제출 현황</div>
           <div style="border:1px solid var(--paper-line);border-radius:12px;overflow:hidden;">
             <table style="width:100%;border-collapse:collapse;font-size:13px;">
               <thead><tr style="background:var(--paper-bg);border-bottom:1px solid var(--paper-line);">
-                <th style="padding:8px 10px;text-align:left;">날짜</th>
-                <th style="padding:8px 10px;text-align:left;">모드</th>
-                <th style="padding:8px 10px;text-align:center;">점수</th>
-                <th style="padding:8px 10px;text-align:center;">정답률</th>
+                <th style="padding:8px 10px;text-align:left;">활동지</th>
+                <th style="padding:8px 10px;text-align:center;">제출일</th>
               </tr></thead>
-              <tbody>${[...state.record.vocabHistory].reverse().map(v=>`
-                <tr style="border-bottom:1px solid var(--paper-line);">
-                  <td style="padding:7px 10px;">${fmtDate(v.date)}</td>
-                  <td style="padding:7px 10px;">${v.mode==='meaning'?'뜻→단어':v.mode==='blank'?'빈칸 채우기':'플래시카드'}</td>
-                  <td style="padding:7px 10px;text-align:center;">${v.score}/${v.total}</td>
-                  <td style="padding:7px 10px;text-align:center;color:${v.pct>=70?'#1B5E20':'#8B2020'};font-weight:600;">${v.pct}%</td>
-                </tr>`).join('')}
+              <tbody>${Object.entries(state.record.worksheets).map(([wsId, ans])=>{
+                const ws = BUILTIN_WORKSHEETS.find(w=>w.id===wsId);
+                const title = ws ? ws.title : wsId;
+                const date = ans.submittedAt ? ans.submittedAt.slice(0,10) : '-';
+                return `<tr style="border-bottom:1px solid var(--paper-line);">
+                  <td style="padding:7px 10px;">${esc(title)}</td>
+                  <td style="padding:7px 10px;text-align:center;color:#1B5E20;font-weight:600;">✅ ${fmtDate(date)}</td>
+                </tr>`;
+              }).join('')}
               </tbody>
             </table>
           </div>
@@ -1681,7 +1643,8 @@ const db = firebase.firestore();
   async function renderTeacherSettings(){
     const c = cfg();
     const students = state.teacherStudents || [];
-    const vocabWords = await loadVocab();
+    const allWorksheets = await loadWorksheets();
+    const customWorksheets = allWorksheets.filter(w=> !BUILTIN_WORKSHEETS.find(b=>b.id===w.id));
     shell.innerHTML = `
       ${teacherTopbar()}
       <div class="container">
@@ -1726,31 +1689,57 @@ const db = firebase.firestore();
         </div>
 
         <div class="setting-card">
-          <h3>익히다 · 어휘 단어 관리 <span style="font-size:12px;font-weight:400;color:var(--ink-soft);">(22기 전용)</span></h3>
-          <div class="section-desc">단어를 등록하면 22기 학생들의 익히다 탭에서 테스트할 수 있어요.</div>
-          <div class="row2" style="margin-bottom:8px;">
-            <div class="field"><label>단어</label><input id="v-word" placeholder="예: 심상"/></div>
-            <div class="field"><label>뜻</label><input id="v-meaning" placeholder="예: 마음속에 떠오르는 이미지나 느낌"/></div>
+          <h3>펼치다 · 활동지 관리</h3>
+          <div class="section-desc">기본 활동지는 앱에 내장되어 있어요. 추가 활동지를 등록하거나 삭제할 수 있어요.</div>
+          <div style="margin-bottom:10px;">
+            <div style="font-size:13px;font-weight:700;color:var(--forest);margin-bottom:6px;">내장 활동지 (삭제 불가)</div>
+            ${BUILTIN_WORKSHEETS.map(w=>`
+              <div class="ws-admin-item">
+                <div>
+                  <div class="ws-admin-title">${esc(w.title)}</div>
+                  <div class="ws-admin-grades">${w.grades.join(' · ')}</div>
+                </div>
+                <span style="font-size:12px;color:var(--ink-soft);">기본 제공</span>
+              </div>`).join('')}
           </div>
-          <div class="field"><label>예문 <span style="font-weight:400;color:var(--ink-soft);">(선택)</span></label><input id="v-example" placeholder="예: 이 시에는 시각적 심상이 두드러진다."/></div>
-          <button class="btn btn-primary btn-sm" id="v-add" style="margin-top:4px;">단어 추가</button>
           <div class="divider" style="margin:14px 0 10px;"></div>
-          <details style="margin-bottom:10px;">
-            <summary style="cursor:pointer;font-size:13px;color:var(--ink-soft);font-weight:600;">📋 여러 단어 한꺼번에 붙여넣기</summary>
-            <div style="margin-top:10px;">
-              <div style="font-size:12.5px;color:var(--ink-soft);margin-bottom:6px;">한 줄에 하나씩, <b>단어/뜻/예문</b> 형식으로 입력하세요. 예문은 생략 가능해요.<br/>예) 심상/마음속에 떠오르는 이미지나 느낌/이 시에는 시각적 심상이 두드러진다.</div>
-              <textarea id="v-bulk" style="width:100%;min-height:120px;font-size:12.5px;border:1px solid var(--paper-line);border-radius:8px;padding:8px;" placeholder="단어/뜻/예문&#10;단어/뜻/예문&#10;..."></textarea>
-              <button class="btn btn-primary btn-sm" id="v-bulk-add" style="margin-top:6px;">일괄 등록</button>
+          <details id="ws-add-form" style="margin-bottom:10px;">
+            <summary style="cursor:pointer;font-size:13px;color:var(--forest);font-weight:700;">+ 새 활동지 추가</summary>
+            <div style="margin-top:12px;display:flex;flex-direction:column;gap:8px;">
+              <div class="field"><label>활동지 제목</label><input id="ws-title" placeholder="예: 오디세이아 제10권 — 키르케"/></div>
+              <div class="field">
+                <label>대상 기수 <span style="font-weight:400;color:var(--ink-soft);">(중복 선택 가능)</span></label>
+                <div style="display:flex;gap:10px;margin-top:4px;">
+                  <label style="font-size:13.5px;"><input type="checkbox" id="ws-g22" value="22기"/> 22기</label>
+                  <label style="font-size:13.5px;"><input type="checkbox" id="ws-g23" value="23기"/> 23기</label>
+                  <label style="font-size:13.5px;"><input type="checkbox" id="ws-g24" value="24기"/> 24기</label>
+                </div>
+              </div>
+              <div class="field">
+                <label>감상 포인트 <span style="font-weight:400;color:var(--ink-soft);">(선생님 제공 내용, 선택)</span></label>
+                <textarea id="ws-provided" style="width:100%;min-height:80px;font-size:13px;border:1px solid var(--paper-line);border-radius:8px;padding:8px;box-sizing:border-box;" placeholder="학생들에게 미리 제공할 내용을 입력하세요."></textarea>
+              </div>
+              <div class="field">
+                <label>내용 확인 질문 <span style="font-weight:400;color:var(--ink-soft);">(한 줄에 하나씩)</span></label>
+                <textarea id="ws-cq" style="width:100%;min-height:80px;font-size:13px;border:1px solid var(--paper-line);border-radius:8px;padding:8px;box-sizing:border-box;" placeholder="Q1. 오디세우스가 ... &#10;Q2. 폴리페모스는 ..."></textarea>
+              </div>
+              <div class="field">
+                <label>생각해보기 질문 <span style="font-weight:400;color:var(--ink-soft);">(한 줄에 하나씩)</span></label>
+                <textarea id="ws-tq" style="width:100%;min-height:60px;font-size:13px;border:1px solid var(--paper-line);border-radius:8px;padding:8px;box-sizing:border-box;" placeholder="Q. 오디세우스의 행동에 대해 ..."></textarea>
+              </div>
+              <button class="btn btn-primary btn-sm" id="ws-add">활동지 등록</button>
             </div>
           </details>
-          <div class="divider" style="margin:14px 0 10px;"></div>
-          <div id="v-list">
-            ${vocabWords.length ? vocabWords.map(w=>`
-              <div class="vocab-admin-item">
-                <span class="vocab-admin-word">${esc(w.word)}</span>
-                <span class="vocab-admin-meaning">${esc(w.meaning)}${w.example?` / ${esc(w.example)}`:''}</span>
-                <button class="btn btn-ghost btn-sm v-del" data-id="${esc(w.id)}" style="color:var(--clay);white-space:nowrap;">삭제</button>
-              </div>`).join('') : `<div style="color:var(--ink-soft);font-size:13px;padding:8px 0;">아직 등록된 단어가 없어요.</div>`}
+          <div class="divider" style="margin:10px 0;"></div>
+          <div id="ws-custom-list">
+            ${customWorksheets.length ? customWorksheets.map(w=>`
+              <div class="ws-admin-item">
+                <div style="flex:1;">
+                  <div class="ws-admin-title">${esc(w.title)}</div>
+                  <div class="ws-admin-grades">${w.grades.join(' · ')}</div>
+                </div>
+                <button class="btn btn-ghost btn-sm ws-del" data-id="${esc(w.id)}" style="color:var(--clay);white-space:nowrap;">삭제</button>
+              </div>`).join('') : `<div style="color:var(--ink-soft);font-size:13px;padding:6px 0;">추가된 활동지가 없어요.</div>`}
           </div>
         </div>
 
@@ -1824,47 +1813,41 @@ const db = firebase.firestore();
       if(ok) toast('섹션 설정이 저장되었어요.');
     };
 
-    document.getElementById('v-bulk-add').onclick = async ()=>{
-      const raw = document.getElementById('v-bulk').value.trim();
-      if(!raw){ toast('내용을 입력해 주세요.'); return; }
-      const lines = raw.split('\n').map(l=>l.trim()).filter(Boolean);
-      const current = await loadVocab();
-      const existing = new Set(current.map(w=>w.word));
-      let added = 0, skipped = 0;
-      for(const line of lines){
-        const parts = line.split('/');
-        const word = parts[0]?.trim();
-        const meaning = parts[1]?.trim();
-        const example = parts[2]?.trim() || '';
-        if(!word || !meaning){ skipped++; continue; }
-        if(existing.has(word)){ skipped++; continue; }
-        current.push({ id: uid(), word, meaning, example });
-        existing.add(word);
-        added++;
+    document.getElementById('ws-add').onclick = async ()=>{
+      const title = document.getElementById('ws-title').value.trim();
+      if(!title){ toast('활동지 제목을 입력해 주세요.'); return; }
+      const grades = ['ws-g22','ws-g23','ws-g24'].filter(id=>document.getElementById(id).checked).map(id=>document.getElementById(id).value);
+      if(!grades.length){ toast('대상 기수를 하나 이상 선택해 주세요.'); return; }
+      const provided = document.getElementById('ws-provided').value.trim();
+      const cqRaw = document.getElementById('ws-cq').value.trim();
+      const tqRaw = document.getElementById('ws-tq').value.trim();
+      const sections = [
+        { type:'write', label:'📝 내용 정리', placeholder:'내용을 순서대로 정리해 보세요.' }
+      ];
+      if(provided) sections.push({ type:'provided', label:'💡 감상 포인트', content: provided });
+      if(cqRaw){
+        const qs = cqRaw.split('\n').map(l=>l.trim()).filter(Boolean);
+        if(qs.length) sections.push({ type:'questions', label:'✅ 내용 확인 질문', questions: qs });
       }
-      const ok = await saveVocab(current);
-      if(ok){ toast(`${added}개 추가, ${skipped}개 건너뜀`); renderTeacherSettings(); }
+      if(tqRaw){
+        const qs = tqRaw.split('\n').map(l=>l.trim()).filter(Boolean);
+        if(qs.length) sections.push({ type:'questions', label:'🤔 생각해보기', questions: qs });
+      }
+      const allWs = await loadWorksheets();
+      const custom = allWs.filter(w=>!BUILTIN_WORKSHEETS.find(b=>b.id===w.id));
+      custom.push({ id: uid(), title, grades, sections });
+      const ok = await saveWorksheets(custom);
+      if(ok){ toast('활동지를 등록했어요.'); renderTeacherSettings(); }
     };
 
-
-    document.getElementById('v-add').onclick = async ()=>{
-      const word = document.getElementById('v-word').value.trim();
-      const meaning = document.getElementById('v-meaning').value.trim();
-      const example = document.getElementById('v-example').value.trim();
-      if(!word || !meaning){ toast('단어와 뜻을 입력해 주세요.'); return; }
-      const current = await loadVocab();
-      if(current.find(w=>w.word===word)){ toast('이미 등록된 단어예요.'); return; }
-      current.push({ id: uid(), word, meaning, example });
-      const ok = await saveVocab(current);
-      if(ok){ toast('단어를 추가했어요.'); renderTeacherSettings(); }
-    };
-    shell.querySelectorAll('.v-del').forEach(btn=>{
+    shell.querySelectorAll('.ws-del').forEach(btn=>{
       btn.onclick = async ()=>{
         const id = btn.dataset.id;
-        if(!confirm('이 단어를 삭제할까요?')) return;
-        const current = await loadVocab();
-        const ok = await saveVocab(current.filter(w=>w.id!==id));
-        if(ok){ toast('단어를 삭제했어요.'); renderTeacherSettings(); }
+        if(!confirm('이 활동지를 삭제할까요?')) return;
+        const allWs = await loadWorksheets();
+        const custom = allWs.filter(w=>!BUILTIN_WORKSHEETS.find(b=>b.id===w.id) && w.id!==id);
+        const ok = await saveWorksheets(custom);
+        if(ok){ toast('활동지를 삭제했어요.'); renderTeacherSettings(); }
       };
     });
 
