@@ -1438,8 +1438,12 @@ const db = firebase.firestore();
   async function loadWorksheets(){
     try {
       const doc = await db.collection('meta').doc('worksheets').get();
-      const custom = doc.exists ? (doc.data().items || []) : [];
-      return [...BUILTIN_WORKSHEETS, ...custom];
+      if(doc.exists && doc.data().items && doc.data().items.length > 0){
+        return doc.data().items;
+      }
+      // 첫 실행: 기본 활동지를 Firestore에 저장
+      await db.collection('meta').doc('worksheets').set({ items: BUILTIN_WORKSHEETS });
+      return [...BUILTIN_WORKSHEETS];
     } catch(e){ return [...BUILTIN_WORKSHEETS]; }
   }
 
@@ -1682,7 +1686,6 @@ const db = firebase.firestore();
     const c = cfg();
     const students = state.teacherStudents || [];
     const allWorksheets = await loadWorksheets();
-    const customWorksheets = allWorksheets.filter(w=> !BUILTIN_WORKSHEETS.find(b=>b.id===w.id));
     shell.innerHTML = `
       ${teacherTopbar()}
       <div class="container">
@@ -1728,19 +1731,7 @@ const db = firebase.firestore();
 
         <div class="setting-card">
           <h3>펼치다 · 활동지 관리</h3>
-          <div class="section-desc">기본 활동지는 앱에 내장되어 있어요. 추가 활동지를 등록하거나 삭제할 수 있어요.</div>
-          <div style="margin-bottom:10px;">
-            <div style="font-size:13px;font-weight:700;color:var(--forest);margin-bottom:6px;">내장 활동지 (삭제 불가)</div>
-            ${BUILTIN_WORKSHEETS.map(w=>`
-              <div class="ws-admin-item">
-                <div>
-                  <div class="ws-admin-title">${esc(w.title)}</div>
-                  <div class="ws-admin-grades">${w.grades.join(' · ')}</div>
-                </div>
-                <span style="font-size:12px;color:var(--ink-soft);">기본 제공</span>
-              </div>`).join('')}
-          </div>
-          <div class="divider" style="margin:14px 0 10px;"></div>
+          <div class="section-desc">활동지를 자유롭게 추가하거나 삭제할 수 있어요.</div>
           <details id="ws-add-form" style="margin-bottom:10px;">
             <summary style="cursor:pointer;font-size:13px;color:var(--forest);font-weight:700;">+ 새 활동지 추가</summary>
             <div style="margin-top:12px;display:flex;flex-direction:column;gap:8px;">
@@ -1769,15 +1760,15 @@ const db = firebase.firestore();
             </div>
           </details>
           <div class="divider" style="margin:10px 0;"></div>
-          <div id="ws-custom-list">
-            ${customWorksheets.length ? customWorksheets.map(w=>`
+          <div id="ws-all-list">
+            ${allWorksheets.length ? allWorksheets.map(w=>`
               <div class="ws-admin-item">
                 <div style="flex:1;">
                   <div class="ws-admin-title">${esc(w.title)}</div>
                   <div class="ws-admin-grades">${w.grades.join(' · ')}</div>
                 </div>
                 <button class="btn btn-ghost btn-sm ws-del" data-id="${esc(w.id)}" style="color:var(--clay);white-space:nowrap;">삭제</button>
-              </div>`).join('') : `<div style="color:var(--ink-soft);font-size:13px;padding:6px 0;">추가된 활동지가 없어요.</div>`}
+              </div>`).join('') : `<div style="color:var(--ink-soft);font-size:13px;padding:6px 0;">등록된 활동지가 없어요.</div>`}
           </div>
         </div>
 
@@ -1872,9 +1863,8 @@ const db = firebase.firestore();
         if(qs.length) sections.push({ type:'questions', label:'🤔 생각해보기', questions: qs });
       }
       const allWs = await loadWorksheets();
-      const custom = allWs.filter(w=>!BUILTIN_WORKSHEETS.find(b=>b.id===w.id));
-      custom.push({ id: uid(), title, grades, sections });
-      const ok = await saveWorksheets(custom);
+      allWs.push({ id: uid(), title, grades, sections });
+      const ok = await saveWorksheets(allWs);
       if(ok){ toast('활동지를 등록했어요.'); renderTeacherSettings(); }
     };
 
@@ -1883,8 +1873,8 @@ const db = firebase.firestore();
         const id = btn.dataset.id;
         if(!confirm('이 활동지를 삭제할까요?')) return;
         const allWs = await loadWorksheets();
-        const custom = allWs.filter(w=>!BUILTIN_WORKSHEETS.find(b=>b.id===w.id) && w.id!==id);
-        const ok = await saveWorksheets(custom);
+        const filtered = allWs.filter(w=>w.id!==id);
+        const ok = await saveWorksheets(filtered);
         if(ok){ toast('활동지를 삭제했어요.'); renderTeacherSettings(); }
       };
     });
