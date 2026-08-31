@@ -1516,7 +1516,9 @@ const db = firebase.firestore();
         </div>
         <div class="ws-body">
           ${sectHtml}
-          ${!submitted ? `<button class="btn btn-primary ws-submit" data-wsid="${esc(ws.id)}" style="margin-top:6px;">활동지 제출</button>` : ''}
+          ${submitted
+            ? `<button class="btn btn-ghost btn-sm ws-edit" data-wsid="${esc(ws.id)}" style="margin-top:6px;color:var(--forest);">✏️ 수정하기</button>`
+            : `<button class="btn btn-primary ws-submit" data-wsid="${esc(ws.id)}" style="margin-top:6px;">활동지 제출</button>`}
         </div>
       </div>`;
     }).join('');
@@ -1546,6 +1548,68 @@ const db = firebase.firestore();
         state.record.worksheets[wsId] = save;
         const ok = await saveRecord(state.studentName, state.record);
         if(ok){ toast('활동지를 제출했어요!'); renderPelchiTab(panel); }
+      };
+    });
+
+    panel.querySelectorAll('.ws-edit').forEach(btn=>{
+      btn.onclick = ()=>{
+        const wsId = btn.dataset.wsid;
+        const card = btn.closest('.ws-card');
+        const ws = mine.find(w=>w.id===wsId);
+        const ans = (state.record.worksheets || {})[wsId] || {};
+        // 카드 본문을 편집 모드로 교체
+        const editSectHtml = ws.sections.map((sec,si)=>{
+          if(sec.type === 'provided'){
+            return `<div class="ws-section">
+              <div class="ws-section-label">${esc(sec.label)}</div>
+              <div class="ws-provided">${esc(sec.content)}</div>
+            </div>`;
+          }
+          if(sec.type === 'write'){
+            const val = ans[`s${si}`] || '';
+            return `<div class="ws-section">
+              <div class="ws-section-label">${esc(sec.label)}</div>
+              <textarea class="ws-textarea" data-sid="${si}" placeholder="${esc(sec.placeholder||'내용을 작성해 주세요.')}">${esc(val)}</textarea>
+            </div>`;
+          }
+          if(sec.type === 'questions'){
+            const qHtml = sec.questions.map((q,qi)=>{
+              const val = ans[`s${si}_q${qi}`] || '';
+              return `<div class="ws-q">
+                <div class="ws-q-text">${esc(q)}</div>
+                <textarea class="ws-textarea" data-sid="${si}" data-qid="${qi}" placeholder="답을 작성해 주세요." style="min-height:70px;">${esc(val)}</textarea>
+              </div>`;
+            }).join('');
+            return `<div class="ws-section">
+              <div class="ws-section-label">${esc(sec.label)}</div>
+              ${qHtml}
+            </div>`;
+          }
+          return '';
+        }).join('');
+        card.querySelector('.ws-body').innerHTML = editSectHtml +
+          `<button class="btn btn-primary ws-resubmit" data-wsid="${esc(wsId)}" style="margin-top:6px;">다시 제출</button>`;
+
+        card.querySelector('.ws-resubmit').onclick = async ()=>{
+          const save = {};
+          ws.sections.forEach((sec,si)=>{
+            if(sec.type === 'write'){
+              const ta = card.querySelector(`.ws-textarea[data-sid="${si}"]`);
+              save[`s${si}`] = ta ? ta.value.trim() : '';
+            }
+            if(sec.type === 'questions'){
+              sec.questions.forEach((_,qi)=>{
+                const ta = card.querySelector(`.ws-textarea[data-sid="${si}"][data-qid="${qi}"]`);
+                save[`s${si}_q${qi}`] = ta ? ta.value.trim() : '';
+              });
+            }
+          });
+          save.submittedAt = new Date().toISOString().slice(0,10)+'T'+new Date().toTimeString().slice(0,8);
+          if(!state.record.worksheets) state.record.worksheets = {};
+          state.record.worksheets[wsId] = save;
+          const ok = await saveRecord(state.studentName, state.record);
+          if(ok){ toast('활동지를 다시 제출했어요!'); renderPelchiTab(panel); }
+        };
       };
     });
   }
