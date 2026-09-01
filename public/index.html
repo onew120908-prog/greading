@@ -1392,6 +1392,39 @@ const db = firebase.firestore();
       ]
     },
     {
+      id: 'narnia-1-2',
+      title: '나니아 연대기 · 마법사의 조카 1장 — 디고리와 외삼촌',
+      grades: ['24기'],
+      sections: [
+        {
+          type: 'write',
+          label: '📝 내용 정리',
+          placeholder: '이 장에서 일어난 일을 순서대로 간략하게 정리해 보세요.'
+        },
+        {
+          type: 'provided',
+          label: '💡 감상 포인트',
+          content: `① 어른의 권위를 방패 삼은 비겁함\n앤드루 삼촌은 스스로를 "위대한 마법사"라고 부르지만, 정작 위험한 실험은 직접 감수하지 않고 아이들을 이용합니다. "위대한 일을 하는 사람은 보통 규칙에 얽매이지 않는다"는 그의 말은 자기 비겁함을 그럴듯하게 포장한 자기합리화입니다. 진짜 용기 있는 사람은 말이 아니라 행동으로 증명합니다.\n\n② 폴리를 따라가는 디고리 — 두려움을 넘는 선택\n디고리는 겁이 나면서도 폴리를 혼자 둘 수 없어 노란 반지를 집어 듭니다. 앤드루 삼촌의 '어른의 용기'(말뿐)와 디고리의 '아이의 용기'(행동)가 극명하게 대조됩니다. 용기란 두려움이 없는 것이 아니라, 두려움에도 불구하고 옳은 일을 하는 것입니다.\n\n③ 지식이 도덕과 분리될 때\n앤드루 삼촌은 놀라운 마법 지식을 갖고 있지만, 그것은 사람을 위한 것이 아니라 탐욕과 호기심에서 비롯된 것입니다. 지식 자체는 선도 악도 아니지만, 누가 무엇을 위해 사용하느냐에 따라 전혀 다른 결과를 낳습니다.`
+        },
+        {
+          type: 'questions',
+          label: '✅ 내용 확인 질문',
+          questions: [
+            'Q1. 앤드루 삼촌은 폴리를 다른 세계로 보내기 위해 어떤 방법을 썼나요? 직접 반지를 사용하지 않은 이유는 무엇인가요?',
+            'Q2. 앤드루 삼촌이 반지를 만드는 데 사용한 재료는 무엇이었나요? 그 재료를 어떻게 구했나요?',
+            'Q3. 디고리는 왜 폴리를 따라 다른 세계로 가기로 결심했나요?'
+          ]
+        },
+        {
+          type: 'questions',
+          label: '🤔 생각해보기',
+          questions: [
+            'Q. 앤드루 삼촌은 "위대한 일을 하는 사람은 보통 사람의 규칙에 얽매이지 않는다"고 말합니다. 여러분은 이 말에 동의하나요, 동의하지 않나요? 그 이유를 자신의 경험이나 알고 있는 사례를 들어 이야기해 보세요.'
+          ]
+        }
+      ]
+    },
+    {
       id: 'odyssey-9',
       title: '오디세이아 제9권 — 외눈박이 거인 키클롭스',
       grades: ['22기','23기'],
@@ -1438,12 +1471,18 @@ const db = firebase.firestore();
   async function loadWorksheets(){
     try {
       const doc = await db.collection('meta').doc('worksheets').get();
-      if(doc.exists && doc.data().items && doc.data().items.length > 0){
-        return doc.data().items;
+      let items = (doc.exists && doc.data().items) ? doc.data().items : [];
+      // BUILTIN에 새로 추가된 항목이 있으면 앞에 병합
+      const newBuiltins = BUILTIN_WORKSHEETS.filter(b => !items.find(w => w.id === b.id));
+      if(newBuiltins.length > 0){
+        items = [...newBuiltins, ...items];
+        await db.collection('meta').doc('worksheets').set({ items });
       }
-      // 첫 실행: 기본 활동지를 Firestore에 저장
-      await db.collection('meta').doc('worksheets').set({ items: BUILTIN_WORKSHEETS });
-      return [...BUILTIN_WORKSHEETS];
+      if(items.length === 0){
+        await db.collection('meta').doc('worksheets').set({ items: BUILTIN_WORKSHEETS });
+        return [...BUILTIN_WORKSHEETS];
+      }
+      return items;
     } catch(e){ return [...BUILTIN_WORKSHEETS]; }
   }
 
