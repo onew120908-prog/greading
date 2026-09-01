@@ -1012,8 +1012,8 @@ const db = firebase.firestore();
       <div class="divider"></div>
       <div class="section-title serif" style="font-size:15px;">최근 기록</div>
       ${todays.length ? `<div class="entry-list">${todays.slice(0,6).map(e=>`
-        <div class="entry type-daily">
-          <div class="entry-top"><span class="entry-title">${esc(e.bookTitle)}${e.password?' 🔒':''}</span><div style="display:flex;align-items:center;gap:8px;"><span class="entry-date">${fmtDate(e.date)}</span><button class="btn btn-ghost btn-sm entry-del-btn" data-id="${e.id}" style="color:var(--clay);font-size:12px;padding:2px 8px;">삭제</button></div></div>
+        <div class="entry type-daily" data-id="${e.id}">
+          <div class="entry-top"><span class="entry-title">${esc(e.bookTitle)}${e.password?' 🔒':''}</span><div style="display:flex;align-items:center;gap:8px;"><span class="entry-date">${fmtDate(e.date)}</span>${!isEntryLocked(e)?`<button class="btn btn-ghost btn-sm entry-edit-btn" data-id="${e.id}" style="font-size:12px;padding:2px 8px;">수정</button>`:''}<button class="btn btn-ghost btn-sm entry-del-btn" data-id="${e.id}" style="color:var(--clay);font-size:12px;padding:2px 8px;">삭제</button></div></div>
           <div class="entry-meta">읽은 범위: ${esc(e.pagesRead||'-')}</div>
           ${isEntryLocked(e) ? lockOverlayHtml(e) : `<div class="entry-body">${esc(e.note)}</div>${revisionsHtml(e)}${feedbackHtml(e)}`}
         </div>`).join('')}</div>` : `<div class="empty"><div class="big">🗒️</div>아직 기록이 없어요. 오늘부터 시작해 볼까요?</div>`}
@@ -1021,6 +1021,41 @@ const db = firebase.firestore();
     bindRevisionToggles(panel);
     bindLockOverlays(panel, ()=>renderDailyTab(panel));
     bindDeleteButtons(panel, '기록', ()=>renderDailyTab(panel));
+    panel.querySelectorAll('.entry-edit-btn').forEach(btn=>{
+      btn.onclick = ()=>{
+        const id = btn.dataset.id;
+        const entry = state.record.entries.find(e=>e.id===id);
+        if(!entry) return;
+        const card = panel.querySelector(`.entry[data-id="${id}"]`);
+        card.querySelector('.entry-body')?.remove();
+        card.querySelector('.rev-toggle')?.remove();
+        card.querySelector('.rev-list')?.remove();
+        card.querySelector('.feedback-block')?.remove();
+        btn.remove();
+        const editDiv = document.createElement('div');
+        editDiv.style.marginTop = '8px';
+        editDiv.innerHTML = `
+          <div class="field" style="margin-bottom:6px;"><label style="font-size:12px;">읽은 범위</label><input class="edit-pages" value="${esc(entry.pagesRead||'')}"/></div>
+          <div class="field" style="margin-bottom:6px;"><label style="font-size:12px;">오늘의 한 줄 생각</label><textarea class="edit-note" style="min-height:80px;">${esc(entry.note||'')}</textarea></div>
+          <div style="display:flex;gap:8px;">
+            <button class="btn btn-primary btn-sm edit-save">저장</button>
+            <button class="btn btn-ghost btn-sm edit-cancel">취소</button>
+          </div>`;
+        card.appendChild(editDiv);
+        editDiv.querySelector('.edit-cancel').onclick = ()=>renderDailyTab(panel);
+        editDiv.querySelector('.edit-save').onclick = async ()=>{
+          const newPages = editDiv.querySelector('.edit-pages').value.trim();
+          const newNote = editDiv.querySelector('.edit-note').value.trim();
+          if(!newNote){ toast('내용을 입력해 주세요.'); return; }
+          if(!entry.revisions) entry.revisions = [];
+          entry.revisions.push({ note: entry.note, pagesRead: entry.pagesRead, date: entry.date, at: Date.now() });
+          entry.pagesRead = newPages; entry.note = newNote; entry.date = todayStr();
+          const ok = await saveRecord(state.studentName, state.record);
+          if(ok){ toast('기록을 수정했어요.'); renderDailyTab(panel); }
+          else { entry.revisions.pop(); toast('저장에 실패했어요.'); }
+        };
+      };
+    });
     document.getElementById('d-save').onclick = async () => {
       if(saving) return;
       const btn = document.getElementById('d-save');
@@ -1076,8 +1111,8 @@ const db = firebase.firestore();
       <div class="divider"></div>
       <div class="section-title serif" style="font-size:15px;">읽은 책들</div>
       ${books.length ? `<div class="entry-list">${books.map(e=>`
-        <div class="entry type-book">
-          <div class="entry-top"><span class="entry-title">${esc(e.title)}${e.password?' 🔒':''} <span style="color:var(--ink-soft); font-weight:400;">· ${esc(e.author||'')}</span></span><div style="display:flex;align-items:center;gap:8px;"><span class="entry-date">${fmtDate(e.startDate)} ~ ${fmtDate(e.endDate)}</span><button class="btn btn-ghost btn-sm entry-del-btn" data-id="${e.id}" style="color:var(--clay);font-size:12px;padding:2px 8px;">삭제</button></div></div>
+        <div class="entry type-book" data-id="${e.id}">
+          <div class="entry-top"><span class="entry-title">${esc(e.title)}${e.password?' 🔒':''} <span style="color:var(--ink-soft); font-weight:400;">· ${esc(e.author||'')}</span></span><div style="display:flex;align-items:center;gap:8px;"><span class="entry-date">${fmtDate(e.startDate)} ~ ${fmtDate(e.endDate)}</span>${!isEntryLocked(e)?`<button class="btn btn-ghost btn-sm entry-edit-btn" data-id="${e.id}" style="font-size:12px;padding:2px 8px;">수정</button>`:''}<button class="btn btn-ghost btn-sm entry-del-btn" data-id="${e.id}" style="color:var(--clay);font-size:12px;padding:2px 8px;">삭제</button></div></div>
           ${isEntryLocked(e) ? lockOverlayHtml(e) : `
           <div class="entry-meta"><span class="stars">${'★'.repeat(e.rating||0)}${'☆'.repeat(5-(e.rating||0))}</span></div>
           ${e.quote ? `<div class="quote-block">"${esc(e.quote)}"</div>` : ''}
@@ -1088,6 +1123,54 @@ const db = firebase.firestore();
     bindRevisionToggles(panel);
     bindLockOverlays(panel, ()=>renderBookTab(panel));
     bindDeleteButtons(panel, '완독 기록', ()=>renderBookTab(panel));
+    panel.querySelectorAll('.entry-edit-btn').forEach(btn=>{
+      btn.onclick = ()=>{
+        const id = btn.dataset.id;
+        const entry = state.record.entries.find(e=>e.id===id);
+        if(!entry) return;
+        const card = panel.querySelector(`.entry[data-id="${id}"]`);
+        card.querySelector('.entry-meta')?.remove();
+        card.querySelector('.quote-block')?.remove();
+        card.querySelector('.entry-body')?.remove();
+        card.querySelector('.rev-toggle')?.remove();
+        card.querySelector('.rev-list')?.remove();
+        card.querySelector('.feedback-block')?.remove();
+        btn.remove();
+        const starVal = entry.rating || 0;
+        const editDiv = document.createElement('div');
+        editDiv.style.marginTop = '8px';
+        editDiv.innerHTML = `
+          <div class="field" style="margin-bottom:6px;"><label style="font-size:12px;">별점</label><div class="star-picker" id="edit-stars-${id}">${[1,2,3,4,5].map(n=>`<span data-n="${n}" style="color:${n<=starVal?'var(--gold)':'var(--ink-soft)'}">★</span>`).join('')}</div></div>
+          <div class="field" style="margin-bottom:6px;"><label style="font-size:12px;">기억나는 문장</label><textarea class="edit-quote" style="min-height:50px;">${esc(entry.quote||'')}</textarea></div>
+          <div class="field" style="margin-bottom:6px;"><label style="font-size:12px;">전체 감상</label><textarea class="edit-review" style="min-height:100px;">${esc(entry.review||'')}</textarea></div>
+          <div style="display:flex;gap:8px;">
+            <button class="btn btn-primary btn-sm edit-save">저장</button>
+            <button class="btn btn-ghost btn-sm edit-cancel">취소</button>
+          </div>`;
+        card.appendChild(editDiv);
+        let newRating = starVal;
+        const starPicker = editDiv.querySelector(`#edit-stars-${id}`);
+        starPicker.querySelectorAll('span').forEach(s=>{
+          s.style.cursor = 'pointer';
+          s.onclick = ()=>{
+            newRating = parseInt(s.dataset.n);
+            starPicker.querySelectorAll('span').forEach((ss,i)=>{ ss.style.color = i < newRating ? 'var(--gold)' : 'var(--ink-soft)'; });
+          };
+        });
+        editDiv.querySelector('.edit-cancel').onclick = ()=>renderBookTab(panel);
+        editDiv.querySelector('.edit-save').onclick = async ()=>{
+          const newQuote = editDiv.querySelector('.edit-quote').value.trim();
+          const newReview = editDiv.querySelector('.edit-review').value.trim();
+          if(!newReview){ toast('감상을 입력해 주세요.'); return; }
+          if(!entry.revisions) entry.revisions = [];
+          entry.revisions.push({ review: entry.review, quote: entry.quote, rating: entry.rating, date: entry.endDate, at: Date.now() });
+          entry.quote = newQuote; entry.review = newReview; entry.rating = newRating;
+          const ok = await saveRecord(state.studentName, state.record);
+          if(ok){ toast('완독 기록을 수정했어요.'); renderBookTab(panel); }
+          else { entry.revisions.pop(); toast('저장에 실패했어요.'); }
+        };
+      };
+    });
     const bReview = document.getElementById('b-review');
     const bCharcount = document.getElementById('b-charcount');
     if(bReview && bCharcount){
