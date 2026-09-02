@@ -1220,7 +1220,18 @@ const db = firebase.firestore();
     const thisWeekLocked = thisWeek && isEntryLocked(thisWeek);
     panel.innerHTML = `
       <div class="section-title serif">${esc(sectionLabel('free'))} · 이번 주 글쓰기</div>
-      <div class="section-desc">일주일에 한 편, 주제 제한 없이 자유롭게 써 보세요.</div>
+      <div class="section-desc">일주일에 한 편, 자유롭게 써 보세요.</div>
+      <div style="background:var(--sage);border-left:4px solid var(--forest);border-radius:0 12px 12px 0;padding:14px 16px;margin-bottom:14px;">
+        <div style="font-size:12px;font-weight:700;color:var(--forest);margin-bottom:6px;letter-spacing:0.03em;">✏️ 이번 주 글쓰기 주제</div>
+        <div style="font-size:15px;font-weight:700;color:var(--ink);margin-bottom:8px;">24시간 동안 어른이 된다면</div>
+        <div style="font-size:13px;color:var(--ink);line-height:1.7;margin-bottom:10px;">하루 동안 어른이 된다면 가장 하고 싶은 한 가지는 무엇인가요? 그 한 가지를 중심으로, 왜 그것을 하고 싶은지, 어떻게 할 것인지, 그 경험이 자신에게 어떤 의미인지를 담아 글로 써 보세요.</div>
+        <div style="font-size:12px;color:var(--ink-soft);border-top:1px solid var(--paper-line);padding-top:8px;display:flex;flex-direction:column;gap:3px;">
+          <div><b>형식</b> · 상상하는 글 (에세이)</div>
+          <div><b>분량</b> · 500자 이상 (띄어쓰기 포함)</div>
+          <div><b>주의</b> · 하고 싶은 것을 단순히 나열하지 말고, <b>한 가지</b>를 정해 그 이유와 상상을 충분히 펼치세요.</div>
+          <div style="margin-top:4px;color:var(--forest);"><b>도움말</b> · 이렇게 시작해 보세요 → <i>"만약 내가 24시간 동안 어른이 된다면, 나는 꼭 ___을 하고 싶다."</i></div>
+        </div>
+      </div>
       <div class="weeklock">${thisWeek ? '✅ 이번 주 글을 이미 썼어요. 아래에서 수정할 수 있어요.' : '✏️ 이번 주 글을 아직 쓰지 않았어요.'}</div>
       ${thisWeekLocked ? `
         <div id="free-lock-area">${lockOverlayHtml(thisWeek)}</div>
