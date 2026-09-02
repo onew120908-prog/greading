@@ -1920,8 +1920,8 @@ const db = firebase.firestore();
     // 펼치다 대상 학생 (22/23/24기)
     const pelchiStudents = students.filter(s=> /^(22|23|24)기/.test(s.name));
 
-    // 모달 상태
-    let modalStudent = null, modalWsId = null;
+    // 모달 상태는 state에 보존 (재렌더 시에도 유지)
+    if(state.pelchiModal === undefined) state.pelchiModal = { student: null, wsId: null };
 
     function scoreLabel(s){ return s===3?'★★★':s===2?'★★':s===1?'★':'-'; }
     function scoreColor(s){ return s===3?'var(--forest)':s===2?'var(--gold)':s===1?'var(--clay)':'var(--ink-soft)'; }
@@ -1953,7 +1953,7 @@ const db = firebase.firestore();
               <thead>
                 <tr style="background:var(--sage);">
                   <th style="padding:8px 12px;text-align:left;border:1px solid var(--paper-line);white-space:nowrap;min-width:90px;">학생</th>
-                  ${wsList.map(w=>`<th style="padding:8px 10px;text-align:center;border:1px solid var(--paper-line);white-space:nowrap;max-width:120px;overflow:hidden;text-overflow:ellipsis;" title="${esc(w.title)}">${esc(w.title.length>14?w.title.slice(0,13)+'…':w.title)}</th>`).join('')}
+                  ${wsList.map(w=>{ const sub = w.title.includes('—') ? w.title.split('—').pop().trim() : w.title; return `<th style="padding:8px 10px;text-align:center;border:1px solid var(--paper-line);white-space:nowrap;max-width:130px;overflow:hidden;text-overflow:ellipsis;" title="${esc(w.title)}">${esc(sub.length>16?sub.slice(0,15)+'…':sub)}</th>`; }).join('')}
                 </tr>
               </thead>
               <tbody>
@@ -1983,6 +1983,7 @@ const db = firebase.firestore();
     }
 
     function renderModal(){
+      const { student: modalStudent, wsId: modalWsId } = state.pelchiModal;
       if(!modalStudent || !modalWsId) return '';
       const s = students.find(st=>st.name===modalStudent);
       const ws = allWs.find(w=>w.id===modalWsId);
@@ -2042,8 +2043,7 @@ const db = firebase.firestore();
     // 셀 클릭
     shell.querySelectorAll('.ws-cell').forEach(cell=>{
       cell.onclick = ()=>{
-        modalStudent = cell.dataset.student;
-        modalWsId = cell.dataset.wsid;
+        state.pelchiModal = { student: cell.dataset.student, wsId: cell.dataset.wsid };
         renderTeacherPelchi();
       };
     });
@@ -2051,10 +2051,11 @@ const db = firebase.firestore();
     // 모달
     const modalBg = document.getElementById('ws-modal-bg');
     if(modalBg){
-      document.getElementById('ws-modal-close').onclick = ()=>{ modalStudent=null; modalWsId=null; renderTeacherPelchi(); };
-      modalBg.onclick = (e)=>{ if(e.target===modalBg){ modalStudent=null; modalWsId=null; renderTeacherPelchi(); } };
+      document.getElementById('ws-modal-close').onclick = ()=>{ state.pelchiModal={student:null,wsId:null}; renderTeacherPelchi(); };
+      modalBg.onclick = (e)=>{ if(e.target===modalBg){ state.pelchiModal={student:null,wsId:null}; renderTeacherPelchi(); } };
 
-      let currentScore = ((students.find(s=>s.name===modalStudent)?.record.worksheets||{})[modalWsId]||{}).score||0;
+      const { student: modalStudent2, wsId: modalWsId2 } = state.pelchiModal;
+      let currentScore = ((students.find(s=>s.name===modalStudent2)?.record.worksheets||{})[modalWsId2]||{}).score||0;
       shell.querySelectorAll('.ws-score-btn').forEach(btn=>{
         btn.onclick = ()=>{
           currentScore = parseInt(btn.dataset.score);
@@ -2066,17 +2067,18 @@ const db = firebase.firestore();
       });
 
       document.getElementById('ws-modal-save').onclick = async ()=>{
-        const s = students.find(st=>st.name===modalStudent);
+        const { student: mStu, wsId: mWsId } = state.pelchiModal;
+        const s = students.find(st=>st.name===mStu);
         if(!s) return;
         if(!s.record.worksheets) s.record.worksheets = {};
-        if(!s.record.worksheets[modalWsId]) s.record.worksheets[modalWsId] = {};
+        if(!s.record.worksheets[mWsId]) s.record.worksheets[mWsId] = {};
         const comment = document.getElementById('ws-modal-comment').value.trim();
-        if(currentScore > 0) s.record.worksheets[modalWsId].score = currentScore;
-        else delete s.record.worksheets[modalWsId].score;
-        if(comment) s.record.worksheets[modalWsId].teacherComment = comment;
-        else delete s.record.worksheets[modalWsId].teacherComment;
+        if(currentScore > 0) s.record.worksheets[mWsId].score = currentScore;
+        else delete s.record.worksheets[mWsId].score;
+        if(comment) s.record.worksheets[mWsId].teacherComment = comment;
+        else delete s.record.worksheets[mWsId].teacherComment;
         const ok = await saveRecord(s.name, s.record);
-        if(ok){ toast('평가를 저장했어요.'); modalStudent=null; modalWsId=null; renderTeacherPelchi(); }
+        if(ok){ toast('평가를 저장했어요.'); state.pelchiModal={student:null,wsId:null}; renderTeacherPelchi(); }
         else toast('저장에 실패했어요.');
       };
     }
