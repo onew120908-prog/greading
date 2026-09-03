@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Leadership Action · GRACE ACADEMY</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌿</text></svg>">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@500;700;900&family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; }
+  :root {
+    --paper: #F5F0E4;
+    --paper-line: #E3D9C2;
+    --ink: #2B2620;
+    --ink-soft: #6B6152;
+    --forest: #2F5D4E;
+    --forest-dark: #1E4235;
+    --gold: #B4862B;
+    --gold-soft: #EFD9A0;
+    --clay: #A6473D;
+    --clay-soft: #F3D9CE;
+    --sage: #DCE6DA;
+    --card: #FFFDF8;
+    --shadow: 0 2px 10px rgba(43,38,32,0.08), 0 1px 2px rgba(43,38,32,0.06);
+  }
+  body {
+    margin: 0;
+    font-family: 'Noto Sans KR', sans-serif;
+    color: var(--ink);
+    background: var(--paper);
+    min-height: 100vh;
+  }
+  .topbar {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 24px; border-bottom: 1px solid var(--paper-line);
+    background: rgba(245,240,228,0.95); backdrop-filter: blur(4px);
+    position: sticky; top: 0; z-index: 10;
+  }
+  .brand { display: flex; align-items: center; gap: 10px; }
+  .brand .mark {
+    width: 34px; height: 30px; border-radius: 6px;
+    background: var(--forest); color: #fff;
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Noto Serif KR', serif; font-weight: 900; font-size: 11px;
+    transform: rotate(-4deg);
+  }
+  .brand .name { font-family: 'Noto Serif KR', serif; font-weight: 700; font-size: 18px; }
+  .container { max-width: 900px; margin: 0 auto; padding: 32px 24px 80px; }
+  .hero {
+    text-align: center; padding: 60px 24px 48px;
+    background: linear-gradient(160deg, var(--forest-dark) 0%, var(--forest) 100%);
+    color: #fff; border-radius: 20px; margin-bottom: 40px;
+    position: relative; overflow: hidden;
+  }
+  .hero::before {
+    content: '';
+    position: absolute; inset: 0;
+    background: radial-gradient(ellipse 60% 50% at 30% 50%, rgba(212,175,55,0.15) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .hero h1 {
+    font-family: 'Noto Serif KR', serif; font-size: clamp(26px, 5vw, 40px);
+    font-weight: 900; margin: 0 0 12px; letter-spacing: -0.5px;
+  }
+  .hero p { font-size: 15px; opacity: 0.8; margin: 0; line-height: 1.7; }
+  .hero .badge-row { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; margin-top: 20px; }
+  .hero .chip {
+    background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.25);
+    padding: 5px 14px; border-radius: 999px; font-size: 12.5px;
+  }
+  .section-grid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 18px;
+    margin-bottom: 36px;
+  }
+  .card {
+    background: var(--card); border: 1px solid var(--paper-line); border-radius: 16px;
+    padding: 24px; box-shadow: var(--shadow); cursor: pointer;
+    transition: transform .15s ease, box-shadow .15s ease;
+    position: relative; overflow: hidden;
+  }
+  .card:hover { transform: translateY(-3px); box-shadow: 0 10px 24px rgba(43,38,32,0.13); }
+  .card .card-accent {
+    position: absolute; top: 0; left: 0; right: 0; height: 4px;
+    border-radius: 16px 16px 0 0;
+  }
+  .card .icon { font-size: 28px; margin-bottom: 12px; }
+  .card h3 { font-family: 'Noto Serif KR', serif; font-size: 17px; margin: 0 0 6px; }
+  .card p { font-size: 13px; color: var(--ink-soft); margin: 0; line-height: 1.6; }
+  .empty-notice {
+    text-align: center; padding: 60px 20px; color: var(--ink-soft);
+  }
+  .empty-notice .big { font-size: 42px; margin-bottom: 12px; }
+  .empty-notice p { font-size: 14px; line-height: 1.7; max-width: 340px; margin: 0 auto; }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="brand">
+    <div class="mark">GA</div>
+    <div class="name">Leadership Action</div>
+  </div>
+</div>
+
+<div class="container">
+  <div class="hero">
+    <h1>Leadership Action Project</h1>
+    <p>GRACE ACADEMY 리더십 액션 프로젝트<br/>이 공간에서 목표를 세우고, 실천하고, 함께 성장해요.</p>
+    <div class="badge-row">
+      <span class="chip">🌿 GRACE ACADEMY</span>
+      <span class="chip">📋 리더십 프로젝트</span>
+    </div>
+  </div>
+
+  <div id="app">
+    <div class="empty-notice">
+      <div class="big">🚧</div>
+      <p>leadership-action 프로젝트가 생성되었어요.<br/>어떤 기능을 추가할지 알려주세요!</p>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>
