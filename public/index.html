@@ -1965,168 +1965,215 @@ const db = firebase.firestore();
   async function renderTeacherPelchi(){
     const students = state.teacherStudents || [];
     const allWs = await loadWorksheets();
-    // 펼치다 대상 학생 (22/23/24기)
     const pelchiStudents = students.filter(s=> /^(22|23|24)기/.test(s.name));
 
-    // 모달 상태는 state에 보존 (재렌더 시에도 유지)
-    if(state.pelchiModal === undefined) state.pelchiModal = { student: null, wsId: null };
+    if(!state.pelchiModal) state.pelchiModal = { student:null, entryId:null, type:null };
+    if(!state.pelchiSubTab) state.pelchiSubTab = 'ws';
 
-    function scoreLabel(s){ return s===3?'★★★':s===2?'★★':s===1?'★':'-'; }
-    function scoreColor(s){ return s===3?'var(--forest)':s===2?'var(--gold)':s===1?'var(--clay)':'var(--ink-soft)'; }
+    const subTab = state.pelchiSubTab;
 
-    function renderGrid(){
-      // 각 학생이 속한 기수에 맞는 활동지만 열 구성
+    function scoreLabel(sc){ return sc===3?'★★★':sc===2?'★★':sc===1?'★':'-'; }
+    function scoreColor(sc){ return sc===3?'var(--forest)':sc===2?'var(--gold)':sc===1?'var(--clay)':'var(--ink-soft)'; }
+    function cellHtml(submitted, score, cls, dsAttrs){
+      if(!submitted) return `<td style="padding:8px;text-align:center;border:1px solid var(--paper-line);color:var(--ink-soft);">⬜</td>`;
+      const icon = score?'🟢':'🟡';
+      return `<td style="padding:8px;text-align:center;border:1px solid var(--paper-line);cursor:pointer;background:${score?'var(--sage)':'#FFFDE7'};" class="${cls}" ${dsAttrs}>
+        <div>${icon}</div>
+        ${score?`<div style="font-size:11px;color:${scoreColor(score)};font-weight:700;">${scoreLabel(score)}</div>`:'<div style="font-size:10px;color:var(--ink-soft);">미평가</div>'}
+      </td>`;
+    }
+    const legend = `<div style="font-size:11px;color:var(--ink-soft);margin-top:6px;">⬜ 미제출 &nbsp;&nbsp; 🟡 제출 (미평가) &nbsp;&nbsp; 🟢 제출 + 평가 완료</div>`;
+
+    // ── 펼치다 그리드 ──
+    function renderWsGrid(){
       const gradeOf = name => { const m=name.match(/^(\d+)기/); return m?m[1]+'기':null; };
-      // 전체 활동지 중 22/23/24기 관련된 것만
-      const wsForGrade = (grade) => allWs.filter(w=>w.grades.includes(grade));
-
-      // 헤더 열: 등장하는 모든 활동지 (기수별로 보여줄 것)
-      // 행 = 학생, 열 = 활동지 (해당 학생 기수에 해당하는 것만 표시)
       const gradeGroups = ['22기','23기','24기'].map(grade=>{
         const studs = pelchiStudents.filter(s=>gradeOf(s.name)===grade);
-        const wsList = wsForGrade(grade);
-        if(!studs.length || !wsList.length) return null;
-        return { grade, studs, wsList };
+        const wsList = allWs.filter(w=>w.grades.includes(grade));
+        if(!studs.length||!wsList.length) return null;
+        return {grade,studs,wsList};
       }).filter(Boolean);
-
-      if(!gradeGroups.length){
-        return `<div class="empty"><div class="big">📄</div>펼치다 대상 학생(22·23·24기)이 없거나 활동지가 없어요.</div>`;
-      }
-
-      return gradeGroups.map(({grade, studs, wsList})=>`
+      if(!gradeGroups.length) return `<div class="empty"><div class="big">📄</div>펼치다 대상 학생이 없거나 활동지가 없어요.</div>`;
+      return gradeGroups.map(({grade,studs,wsList})=>`
         <div style="margin-bottom:28px;">
           <div style="font-size:14px;font-weight:700;color:var(--forest);margin-bottom:10px;">${grade}</div>
           <div style="overflow-x:auto;">
             <table style="border-collapse:collapse;width:100%;min-width:${120+wsList.length*110}px;font-size:13px;">
-              <thead>
-                <tr style="background:var(--sage);">
-                  <th style="padding:8px 12px;text-align:left;border:1px solid var(--paper-line);white-space:nowrap;min-width:90px;">학생</th>
-                  ${wsList.map(w=>{ const sub = w.title.includes('—') ? w.title.split('—').pop().trim() : w.title; return `<th style="padding:8px 10px;text-align:center;border:1px solid var(--paper-line);white-space:nowrap;max-width:130px;overflow:hidden;text-overflow:ellipsis;" title="${esc(w.title)}">${esc(sub.length>16?sub.slice(0,15)+'…':sub)}</th>`; }).join('')}
-                </tr>
-              </thead>
-              <tbody>
-                ${studs.map(s=>{
-                  const wsMap = s.record.worksheets || {};
-                  return `<tr>
-                    <td style="padding:8px 12px;border:1px solid var(--paper-line);font-weight:600;">${esc(s.name)}</td>
-                    ${wsList.map(w=>{
-                      const ans = wsMap[w.id];
-                      const submitted = ans && ans.submittedAt;
-                      const score = ans && ans.score;
-                      if(!submitted) return `<td style="padding:8px;text-align:center;border:1px solid var(--paper-line);color:var(--ink-soft);">⬜</td>`;
-                      const icon = score ? '🟢' : '🟡';
-                      return `<td style="padding:8px;text-align:center;border:1px solid var(--paper-line);cursor:pointer;background:${score?'var(--sage)':'#FFFDE7'};" class="ws-cell" data-student="${esc(s.name)}" data-wsid="${esc(w.id)}">
-                        <div>${icon}</div>
-                        ${score?`<div style="font-size:11px;color:${scoreColor(score)};font-weight:700;">${scoreLabel(score)}</div>`:'<div style="font-size:10px;color:var(--ink-soft);">미평가</div>'}
-                      </td>`;
-                    }).join('')}
-                  </tr>`;
-                }).join('')}
-              </tbody>
+              <thead><tr style="background:var(--sage);">
+                <th style="padding:8px 12px;text-align:left;border:1px solid var(--paper-line);white-space:nowrap;min-width:90px;">학생</th>
+                ${wsList.map(w=>{ const sub=w.title.includes('—')?w.title.split('—').pop().trim():w.title; return `<th style="padding:8px 10px;text-align:center;border:1px solid var(--paper-line);white-space:nowrap;" title="${esc(w.title)}">${esc(sub.length>16?sub.slice(0,15)+'…':sub)}</th>`; }).join('')}
+              </tr></thead>
+              <tbody>${studs.map(s=>{
+                const wsMap=s.record.worksheets||{};
+                return `<tr><td style="padding:8px 12px;border:1px solid var(--paper-line);font-weight:600;">${esc(s.name)}</td>
+                ${wsList.map(w=>{ const ans=wsMap[w.id]; return cellHtml(ans&&ans.submittedAt, ans&&ans.score, 'ws-cell', `data-student="${esc(s.name)}" data-wsid="${esc(w.id)}"`); }).join('')}</tr>`;
+              }).join('')}</tbody>
             </table>
-          </div>
-          <div style="font-size:11px;color:var(--ink-soft);margin-top:6px;">⬜ 미제출 &nbsp;&nbsp; 🟡 제출 (미평가) &nbsp;&nbsp; 🟢 제출 + 평가 완료</div>
-        </div>
-      `).join('');
+          </div>${legend}
+        </div>`).join('');
     }
 
-    function renderModal(){
-      const { student: modalStudent, wsId: modalWsId } = state.pelchiModal;
-      if(!modalStudent || !modalWsId) return '';
-      const s = students.find(st=>st.name===modalStudent);
-      const ws = allWs.find(w=>w.id===modalWsId);
-      if(!s||!ws) return '';
-      const ans = (s.record.worksheets||{})[ws.id]||{};
-      const score = ans.score||0;
-      const comment = ans.teacherComment||'';
-      const sectHtml = ws.sections.map((sec,si)=>{
-        if(sec.type==='provided') return `<div style="margin-bottom:12px;"><div style="font-size:12px;font-weight:700;color:var(--forest);margin-bottom:4px;">${esc(sec.label)}</div><div style="background:var(--sage);padding:10px;border-radius:8px;font-size:12.5px;line-height:1.7;white-space:pre-wrap;">${esc(sec.content)}</div></div>`;
-        if(sec.type==='write'){
-          const val = ans[`s${si}`]||'';
-          return `<div style="margin-bottom:12px;"><div style="font-size:12px;font-weight:700;color:var(--forest);margin-bottom:4px;">${esc(sec.label)}</div><div style="background:#fafafa;border:1px solid var(--paper-line);border-radius:8px;padding:10px;font-size:13px;line-height:1.7;white-space:pre-wrap;">${esc(val)||'<span style="color:var(--ink-soft)">(미작성)</span>'}</div></div>`;
-        }
-        if(sec.type==='questions'){
-          return `<div style="margin-bottom:12px;"><div style="font-size:12px;font-weight:700;color:var(--forest);margin-bottom:6px;">${esc(sec.label)}</div>${sec.questions.map((q,qi)=>{
-            const val = ans[`s${si}_q${qi}`]||'';
-            return `<div style="margin-bottom:10px;"><div style="font-size:12.5px;font-weight:600;margin-bottom:3px;">${esc(q)}</div><div style="background:#fafafa;border:1px solid var(--paper-line);border-radius:8px;padding:8px 10px;font-size:13px;line-height:1.65;white-space:pre-wrap;">${esc(val)||'<span style="color:var(--ink-soft)">(미작성)</span>'}</div></div>`;
-          }).join('')}</div>`;
-        }
-        return '';
+    // ── 잇다 그리드 ──
+    function renderBookGrid(){
+      if(!students.length) return `<div class="empty"><div class="big">📚</div>학생이 없어요.</div>`;
+      const rows = students.map(s=>{
+        const books = s.record.entries.filter(e=>e.type==='book').sort((a,b)=>b.createdAt-a.createdAt);
+        if(!books.length) return `<tr><td style="padding:8px 12px;border:1px solid var(--paper-line);font-weight:600;">${esc(s.name)}</td><td style="padding:8px;text-align:center;border:1px solid var(--paper-line);color:var(--ink-soft);" colspan="1">기록 없음</td></tr>`;
+        return books.map((e,i)=>`<tr>
+          ${i===0?`<td style="padding:8px 12px;border:1px solid var(--paper-line);font-weight:600;vertical-align:top;" rowspan="${books.length}">${esc(s.name)}</td>`:''}
+          ${cellHtml(true, e.score, 'book-cell', `data-student="${esc(s.name)}" data-eid="${esc(e.id)}"`)
+            .replace('<td ', `<td title="${esc(e.title)}" `)}
+          <td style="padding:8px 10px;border:1px solid var(--paper-line);font-size:13px;">${esc(e.title)}<br/><span style="font-size:11px;color:var(--ink-soft);">${fmtDate(e.endDate)}</span></td>
+        </tr>`).join('');
       }).join('');
+      return `<div style="overflow-x:auto;"><table style="border-collapse:collapse;width:100%;font-size:13px;">
+        <thead><tr style="background:var(--sage);">
+          <th style="padding:8px 12px;text-align:left;border:1px solid var(--paper-line);min-width:90px;">학생</th>
+          <th style="padding:8px 10px;text-align:center;border:1px solid var(--paper-line);width:70px;">평가</th>
+          <th style="padding:8px 12px;text-align:left;border:1px solid var(--paper-line);">책 제목 / 완독일</th>
+        </tr></thead>
+        <tbody>${rows}</tbody>
+      </table></div>${legend}`;
+    }
 
-      return `<div id="ws-modal-bg" style="position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:200;display:flex;align-items:flex-start;justify-content:center;padding:20px;overflow-y:auto;">
+    // ── 짓다 그리드 (최근 8주) ──
+    function renderFreeGrid(){
+      const recentWeeks = [];
+      let d = new Date(todayStr());
+      for(let i=0;i<8;i++){
+        recentWeeks.push(getWeekKey(d.toISOString().slice(0,10)));
+        d.setDate(d.getDate()-7);
+      }
+      recentWeeks.reverse();
+      if(!students.length) return `<div class="empty"><div class="big">✒️</div>학생이 없어요.</div>`;
+      return `<div style="overflow-x:auto;"><table style="border-collapse:collapse;width:100%;min-width:${120+recentWeeks.length*90}px;font-size:13px;">
+        <thead><tr style="background:var(--sage);">
+          <th style="padding:8px 12px;text-align:left;border:1px solid var(--paper-line);min-width:90px;">학생</th>
+          ${recentWeeks.map(wk=>{ const [y,w]=wk.split('-W'); return `<th style="padding:8px 6px;text-align:center;border:1px solid var(--paper-line);font-size:12px;white-space:nowrap;">${w}주차</th>`; }).join('')}
+        </tr></thead>
+        <tbody>${students.map(s=>{
+          const freeMap={};
+          s.record.entries.filter(e=>e.type==='free').forEach(e=>{ freeMap[e.weekKey]=e; });
+          return `<tr><td style="padding:8px 12px;border:1px solid var(--paper-line);font-weight:600;">${esc(s.name)}</td>
+          ${recentWeeks.map(wk=>{ const e=freeMap[wk]; return cellHtml(!!e, e&&e.score, 'free-cell', `data-student="${esc(s.name)}" data-eid="${esc(e?e.id:'')}" data-wk="${esc(wk)}"`); }).join('')}
+          </tr>`;
+        }).join('')}</tbody>
+      </table></div>${legend}`;
+    }
+
+    // ── 공통 모달 ──
+    function renderModal(){
+      const {student, entryId, type} = state.pelchiModal;
+      if(!student||!type) return '';
+      const s = students.find(st=>st.name===student);
+      if(!s) return '';
+      let title='', dateStr='', bodyHtml='', score=0, comment='';
+
+      if(type==='ws'){
+        const ws=allWs.find(w=>w.id===entryId); if(!ws) return '';
+        const ans=(s.record.worksheets||{})[ws.id]||{};
+        score=ans.score||0; comment=ans.teacherComment||'';
+        title=`${esc(s.name)} · ${esc(ws.title)}`; dateStr=`제출일: ${ans.submittedAt?ans.submittedAt.slice(0,10):'-'}`;
+        bodyHtml=ws.sections.map((sec,si)=>{
+          if(sec.type==='provided') return `<div style="margin-bottom:12px;"><b style="font-size:12px;color:var(--forest);">${esc(sec.label)}</b><div style="background:var(--sage);padding:10px;border-radius:8px;font-size:12.5px;line-height:1.7;white-space:pre-wrap;margin-top:4px;">${esc(sec.content)}</div></div>`;
+          if(sec.type==='write'){ const v=ans[`s${si}`]||''; return `<div style="margin-bottom:12px;"><b style="font-size:12px;color:var(--forest);">${esc(sec.label)}</b><div style="background:#fafafa;border:1px solid var(--paper-line);border-radius:8px;padding:10px;font-size:13px;line-height:1.7;white-space:pre-wrap;margin-top:4px;">${esc(v)||'<span style="color:var(--ink-soft)">(미작성)</span>'}</div></div>`; }
+          if(sec.type==='questions') return `<div style="margin-bottom:12px;"><b style="font-size:12px;color:var(--forest);">${esc(sec.label)}</b>${sec.questions.map((q,qi)=>{ const v=ans[`s${si}_q${qi}`]||''; return `<div style="margin-top:8px;"><div style="font-size:12.5px;font-weight:600;margin-bottom:3px;">${esc(q)}</div><div style="background:#fafafa;border:1px solid var(--paper-line);border-radius:8px;padding:8px 10px;font-size:13px;line-height:1.65;white-space:pre-wrap;">${esc(v)||'<span style="color:var(--ink-soft)">(미작성)</span>'}</div></div>`; }).join('')}</div>`;
+          return '';
+        }).join('');
+      } else if(type==='book'){
+        const e=s.record.entries.find(en=>en.id===entryId); if(!e) return '';
+        score=e.score||0; comment=e.teacherComment||'';
+        title=`${esc(s.name)} · ${esc(e.title)}`; dateStr=`완독일: ${fmtDate(e.endDate)}`;
+        bodyHtml=`
+          <div style="margin-bottom:10px;"><b>지은이</b> ${esc(e.author||'-')}</div>
+          <div style="margin-bottom:10px;"><b>별점</b> ${'★'.repeat(e.rating||0)}${'☆'.repeat(5-(e.rating||0))}</div>
+          ${e.quote?`<div style="margin-bottom:10px;background:var(--gold-soft);border-left:3px solid var(--gold);padding:10px 12px;border-radius:0 8px 8px 0;font-size:13px;line-height:1.7;">"${esc(e.quote)}"</div>`:''}
+          <div style="background:#fafafa;border:1px solid var(--paper-line);border-radius:8px;padding:10px;font-size:13px;line-height:1.7;white-space:pre-wrap;">${esc(e.review||'(감상 없음)')}</div>`;
+      } else if(type==='free'){
+        const e=s.record.entries.find(en=>en.id===entryId); if(!e) return '';
+        score=e.score||0; comment=e.teacherComment||'';
+        title=`${esc(s.name)} · ${esc(e.title)}`; dateStr=`작성일: ${fmtDate(e.date)}`;
+        bodyHtml=`<div style="background:#fafafa;border:1px solid var(--paper-line);border-radius:8px;padding:12px;font-size:13px;line-height:1.75;white-space:pre-wrap;">${esc(e.content||'(내용 없음)')}</div>`;
+      }
+
+      return `<div id="act-modal-bg" style="position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:200;display:flex;align-items:flex-start;justify-content:center;padding:20px;overflow-y:auto;">
         <div style="background:var(--card);border-radius:16px;padding:24px;max-width:600px;width:100%;position:relative;max-height:90vh;overflow-y:auto;">
-          <button id="ws-modal-close" style="position:absolute;top:14px;right:14px;background:none;border:none;font-size:20px;cursor:pointer;color:var(--ink-soft);">✕</button>
-          <div style="font-size:16px;font-weight:700;margin-bottom:4px;">${esc(s.name)} · ${esc(ws.title)}</div>
-          <div style="font-size:12px;color:var(--ink-soft);margin-bottom:16px;">제출일: ${ans.submittedAt?ans.submittedAt.slice(0,10):'-'}</div>
-          <div style="border-top:1px solid var(--paper-line);padding-top:14px;margin-bottom:16px;">${sectHtml}</div>
+          <button id="act-modal-close" style="position:absolute;top:14px;right:14px;background:none;border:none;font-size:20px;cursor:pointer;color:var(--ink-soft);">✕</button>
+          <div style="font-size:16px;font-weight:700;margin-bottom:4px;">${title}</div>
+          <div style="font-size:12px;color:var(--ink-soft);margin-bottom:16px;">${dateStr}</div>
+          <div style="border-top:1px solid var(--paper-line);padding-top:14px;margin-bottom:16px;">${bodyHtml}</div>
           <div style="border-top:1px solid var(--paper-line);padding-top:14px;">
             <div style="font-size:13px;font-weight:700;margin-bottom:8px;">평가</div>
             <div style="display:flex;gap:8px;margin-bottom:10px;">
-              ${[1,2,3].map(n=>`<button class="btn ${score===n?'btn-primary':'btn-ghost'} btn-sm ws-score-btn" data-score="${n}" style="${score===n?'':'border:1px solid var(--paper-line);'}">${scoreLabel(n)}</button>`).join('')}
-              <button class="btn btn-ghost btn-sm ws-score-btn" data-score="0" style="border:1px solid var(--paper-line);">초기화</button>
+              ${[1,2,3].map(n=>`<button class="btn ${score===n?'btn-primary':'btn-ghost'} btn-sm act-score-btn" data-score="${n}">${scoreLabel(n)}</button>`).join('')}
+              <button class="btn btn-ghost btn-sm act-score-btn" data-score="0" style="border:1px solid var(--paper-line);">초기화</button>
             </div>
-            <div class="field" style="margin-bottom:10px;"><label style="font-size:12px;">한 줄 코멘트 (선택)</label><textarea id="ws-modal-comment" style="min-height:60px;font-size:13px;border:1px solid var(--paper-line);border-radius:8px;padding:8px;width:100%;box-sizing:border-box;">${esc(comment)}</textarea></div>
-            <button class="btn btn-primary btn-sm" id="ws-modal-save">평가 저장</button>
+            <div class="field" style="margin-bottom:10px;"><label style="font-size:12px;">한 줄 코멘트 (선택)</label><textarea id="act-modal-comment" style="min-height:60px;font-size:13px;border:1px solid var(--paper-line);border-radius:8px;padding:8px;width:100%;box-sizing:border-box;">${esc(comment)}</textarea></div>
+            <button class="btn btn-primary btn-sm" id="act-modal-save">평가 저장</button>
           </div>
         </div>
       </div>`;
     }
 
+    const subTabBtn = (key, label) => `<button class="btn ${subTab===key?'btn-primary':'btn-ghost'} btn-sm act-subtab" data-tab="${key}" style="border:1px solid var(--paper-line);">${label}</button>`;
+
     shell.innerHTML = `
       ${teacherTopbar()}
       <div class="container">
-        <div class="section-title serif" style="font-size:20px;margin-bottom:4px;">펼치다 · 제출 현황</div>
-        <div class="section-desc" style="margin-bottom:18px;">셀을 클릭하면 학생 답안을 보고 평가할 수 있어요.</div>
-        ${renderGrid()}
+        <div class="section-title serif" style="font-size:20px;margin-bottom:8px;">활동 현황</div>
+        <div style="display:flex;gap:8px;margin-bottom:18px;">
+          ${subTabBtn('ws','📄 펼치다')}${subTabBtn('book','📚 잇다')}${subTabBtn('free','✒️ 짓다')}
+        </div>
+        ${subTab==='ws'?renderWsGrid():subTab==='book'?renderBookGrid():renderFreeGrid()}
       </div>
       ${renderModal()}
     `;
 
-    // topbar
     document.getElementById('home').onclick = () => { state.role=null; render(); };
     document.getElementById('t-pelchi').onclick = () => {};
     document.getElementById('t-settings').onclick = () => { state.teacherView='settings'; render(); };
 
-    // 셀 클릭
-    shell.querySelectorAll('.ws-cell').forEach(cell=>{
-      cell.onclick = ()=>{
-        state.pelchiModal = { student: cell.dataset.student, wsId: cell.dataset.wsid };
-        renderTeacherPelchi();
-      };
+    shell.querySelectorAll('.act-subtab').forEach(btn=>{
+      btn.onclick = ()=>{ state.pelchiSubTab=btn.dataset.tab; state.pelchiModal={student:null,entryId:null,type:null}; renderTeacherPelchi(); };
     });
+    shell.querySelectorAll('.ws-cell').forEach(c=>{ c.onclick=()=>{ state.pelchiModal={student:c.dataset.student,entryId:c.dataset.wsid,type:'ws'}; renderTeacherPelchi(); }; });
+    shell.querySelectorAll('.book-cell').forEach(c=>{ c.onclick=()=>{ state.pelchiModal={student:c.dataset.student,entryId:c.dataset.eid,type:'book'}; renderTeacherPelchi(); }; });
+    shell.querySelectorAll('.free-cell').forEach(c=>{ if(c.dataset.eid) c.onclick=()=>{ state.pelchiModal={student:c.dataset.student,entryId:c.dataset.eid,type:'free'}; renderTeacherPelchi(); }; });
 
-    // 모달
-    const modalBg = document.getElementById('ws-modal-bg');
+    const modalBg = document.getElementById('act-modal-bg');
     if(modalBg){
-      document.getElementById('ws-modal-close').onclick = ()=>{ state.pelchiModal={student:null,wsId:null}; renderTeacherPelchi(); };
-      modalBg.onclick = (e)=>{ if(e.target===modalBg){ state.pelchiModal={student:null,wsId:null}; renderTeacherPelchi(); } };
+      const closeModal = ()=>{ state.pelchiModal={student:null,entryId:null,type:null}; renderTeacherPelchi(); };
+      document.getElementById('act-modal-close').onclick = closeModal;
+      modalBg.onclick = e=>{ if(e.target===modalBg) closeModal(); };
 
-      const { student: modalStudent2, wsId: modalWsId2 } = state.pelchiModal;
-      let currentScore = ((students.find(s=>s.name===modalStudent2)?.record.worksheets||{})[modalWsId2]||{}).score||0;
-      shell.querySelectorAll('.ws-score-btn').forEach(btn=>{
+      const {student, entryId, type} = state.pelchiModal;
+      const s = students.find(st=>st.name===student);
+      let currentScore = 0;
+      if(s && type==='ws') currentScore = ((s.record.worksheets||{})[entryId]||{}).score||0;
+      else if(s && (type==='book'||type==='free')){ const e=s.record.entries.find(en=>en.id===entryId); currentScore=e&&e.score||0; }
+
+      shell.querySelectorAll('.act-score-btn').forEach(btn=>{
         btn.onclick = ()=>{
           currentScore = parseInt(btn.dataset.score);
-          shell.querySelectorAll('.ws-score-btn').forEach(b=>{
-            const active = parseInt(b.dataset.score)===currentScore && currentScore>0;
-            b.className = `btn ${active?'btn-primary':'btn-ghost'} btn-sm ws-score-btn`;
-          });
+          shell.querySelectorAll('.act-score-btn').forEach(b=>{ b.className=`btn ${parseInt(b.dataset.score)===currentScore&&currentScore>0?'btn-primary':'btn-ghost'} btn-sm act-score-btn`; });
         };
       });
 
-      document.getElementById('ws-modal-save').onclick = async ()=>{
-        const { student: mStu, wsId: mWsId } = state.pelchiModal;
-        const s = students.find(st=>st.name===mStu);
+      document.getElementById('act-modal-save').onclick = async ()=>{
         if(!s) return;
-        if(!s.record.worksheets) s.record.worksheets = {};
-        if(!s.record.worksheets[mWsId]) s.record.worksheets[mWsId] = {};
-        const comment = document.getElementById('ws-modal-comment').value.trim();
-        if(currentScore > 0) s.record.worksheets[mWsId].score = currentScore;
-        else delete s.record.worksheets[mWsId].score;
-        if(comment) s.record.worksheets[mWsId].teacherComment = comment;
-        else delete s.record.worksheets[mWsId].teacherComment;
+        const comment = document.getElementById('act-modal-comment').value.trim();
+        if(type==='ws'){
+          if(!s.record.worksheets) s.record.worksheets={};
+          if(!s.record.worksheets[entryId]) s.record.worksheets[entryId]={};
+          if(currentScore>0) s.record.worksheets[entryId].score=currentScore; else delete s.record.worksheets[entryId].score;
+          if(comment) s.record.worksheets[entryId].teacherComment=comment; else delete s.record.worksheets[entryId].teacherComment;
+        } else {
+          const e=s.record.entries.find(en=>en.id===entryId); if(!e) return;
+          if(currentScore>0) e.score=currentScore; else delete e.score;
+          if(comment) e.teacherComment=comment; else delete e.teacherComment;
+        }
         const ok = await saveRecord(s.name, s.record);
-        if(ok){ toast('평가를 저장했어요.'); state.pelchiModal={student:null,wsId:null}; renderTeacherPelchi(); }
+        if(ok){ toast('평가를 저장했어요.'); state.pelchiModal={student:null,entryId:null,type:null}; renderTeacherPelchi(); }
         else toast('저장에 실패했어요.');
       };
     }
