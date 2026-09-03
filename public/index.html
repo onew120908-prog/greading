@@ -1965,7 +1965,13 @@ const db = firebase.firestore();
   async function renderTeacherPelchi(){
     const students = state.teacherStudents || [];
     const allWs = await loadWorksheets();
-    const pelchiStudents = students.filter(s=> /^(22|23|24)기/.test(s.name));
+    const gradeOrder = name => { const m=name.match(/^(\d+)기/); return m?parseInt(m[1]):99; };
+    const sortStudents = arr => [...arr].sort((a,b)=>{
+      const ga=gradeOrder(a.name), gb=gradeOrder(b.name);
+      if(ga!==gb) return ga-gb;
+      return a.name.localeCompare(b.name,'ko');
+    });
+    const pelchiStudents = sortStudents(students.filter(s=> /^(22|23|24)기/.test(s.name)));
 
     if(!state.pelchiModal) state.pelchiModal = { student:null, entryId:null, type:null };
     if(!state.pelchiSubTab) state.pelchiSubTab = 'ws';
@@ -2015,8 +2021,9 @@ const db = firebase.firestore();
 
     // ── 잇다 그리드 ──
     function renderBookGrid(){
-      if(!students.length) return `<div class="empty"><div class="big">📚</div>학생이 없어요.</div>`;
-      const rows = students.map(s=>{
+      const sortedStudents = sortStudents(students.filter(s=>/^(22|23|24)기/.test(s.name)));
+      if(!sortedStudents.length) return `<div class="empty"><div class="big">📚</div>학생이 없어요.</div>`;
+      const rows = sortedStudents.map(s=>{
         const books = s.record.entries.filter(e=>e.type==='book').sort((a,b)=>b.createdAt-a.createdAt);
         if(!books.length) return `<tr><td style="padding:8px 12px;border:1px solid var(--paper-line);font-weight:600;">${esc(s.name)}</td><td style="padding:8px;text-align:center;border:1px solid var(--paper-line);color:var(--ink-soft);" colspan="1">기록 없음</td></tr>`;
         return books.map((e,i)=>`<tr>
@@ -2045,13 +2052,14 @@ const db = firebase.firestore();
         d.setDate(d.getDate()-7);
       }
       recentWeeks.reverse();
-      if(!students.length) return `<div class="empty"><div class="big">✒️</div>학생이 없어요.</div>`;
+      const sortedStudents = sortStudents(students.filter(s=>/^(22|23|24)기/.test(s.name)));
+      if(!sortedStudents.length) return `<div class="empty"><div class="big">✒️</div>학생이 없어요.</div>`;
       return `<div style="overflow-x:auto;"><table style="border-collapse:collapse;width:100%;min-width:${120+recentWeeks.length*90}px;font-size:13px;">
         <thead><tr style="background:var(--sage);">
           <th style="padding:8px 12px;text-align:left;border:1px solid var(--paper-line);min-width:90px;">학생</th>
           ${recentWeeks.map(wk=>{ const [y,w]=wk.split('-W'); return `<th style="padding:8px 6px;text-align:center;border:1px solid var(--paper-line);font-size:12px;white-space:nowrap;">${w}주차</th>`; }).join('')}
         </tr></thead>
-        <tbody>${students.map(s=>{
+        <tbody>${sortedStudents.map(s=>{
           const freeMap={};
           s.record.entries.filter(e=>e.type==='free').forEach(e=>{ freeMap[e.weekKey]=e; });
           return `<tr><td style="padding:8px 12px;border:1px solid var(--paper-line);font-weight:600;">${esc(s.name)}</td>
