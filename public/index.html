@@ -511,6 +511,12 @@ const db = firebase.firestore();
     const d = new Date(s + (s.length===10?'T00:00:00':''));
     return `${d.getMonth()+1}월 ${d.getDate()}일`;
   }
+  function fmtDateTime(s){
+    if(!s) return '';
+    const d = typeof s === 'number' ? new Date(s) : new Date(s + (s.length===10?'T00:00:00':''));
+    const h = d.getHours().toString().padStart(2,'0'), mn = d.getMinutes().toString().padStart(2,'0');
+    return `${d.getMonth()+1}월 ${d.getDate()}일 ${h}:${mn}`;
+  }
   function fmtDateFull(s){
     if(!s) return '';
     const d = new Date(s + (s.length===10?'T00:00:00':''));
@@ -1284,7 +1290,7 @@ const db = firebase.firestore();
       if(thisWeek){
         if(!thisWeek.revisions) thisWeek.revisions = [];
         thisWeek.revisions.push({ title: thisWeek.title, content: thisWeek.content, date: thisWeek.date, at: Date.now() });
-        thisWeek.title = title; thisWeek.content = content; thisWeek.date = todayStr();
+        thisWeek.title = title; thisWeek.content = content;
       } else {
         const entry = { id:uid(), type:'free', date:todayStr(), createdAt:Date.now(), weekKey:wk, title, content, feedback:null };
         if(pw) entry.password = pw;
@@ -2081,7 +2087,7 @@ const db = firebase.firestore();
         const ws=allWs.find(w=>w.id===entryId); if(!ws) return '';
         const ans=(s.record.worksheets||{})[ws.id]||{};
         score=ans.score||0; comment=ans.teacherComment||'';
-        title=`${esc(s.name)} · ${esc(ws.title)}`; dateStr=`제출일: ${ans.submittedAt?ans.submittedAt.slice(0,10):'-'}`;
+        title=`${esc(s.name)} · ${esc(ws.title)}`; dateStr=`제출일: ${ans.submittedAt?fmtDateTime(ans.submittedAt):'-'}`;
         bodyHtml=ws.sections.map((sec,si)=>{
           if(sec.type==='provided') return `<div style="margin-bottom:12px;"><b style="font-size:12px;color:var(--forest);">${esc(sec.label)}</b><div style="background:var(--sage);padding:10px;border-radius:8px;font-size:12.5px;line-height:1.7;white-space:pre-wrap;margin-top:4px;">${esc(sec.content)}</div></div>`;
           if(sec.type==='write'){ const v=ans[`s${si}`]||''; return `<div style="margin-bottom:12px;"><b style="font-size:12px;color:var(--forest);">${esc(sec.label)}</b><div style="background:#fafafa;border:1px solid var(--paper-line);border-radius:8px;padding:10px;font-size:13px;line-height:1.7;white-space:pre-wrap;margin-top:4px;">${esc(v)||'<span style="color:var(--ink-soft)">(미작성)</span>'}</div></div>`; }
@@ -2091,7 +2097,7 @@ const db = firebase.firestore();
       } else if(type==='book'){
         const e=s.record.entries.find(en=>en.id===entryId); if(!e) return '';
         score=e.score||0; comment=e.teacherComment||'';
-        title=`${esc(s.name)} · ${esc(e.title)}`; dateStr=`완독일: ${fmtDate(e.endDate)}`;
+        title=`${esc(s.name)} · ${esc(e.title)}`; dateStr=`완독일: ${fmtDate(e.endDate)} · 기록: ${fmtDateTime(e.createdAt)}`;
         bodyHtml=`
           <div style="margin-bottom:10px;"><b>지은이</b> ${esc(e.author||'-')}</div>
           <div style="margin-bottom:10px;"><b>별점</b> ${'★'.repeat(e.rating||0)}${'☆'.repeat(5-(e.rating||0))}</div>
@@ -2100,7 +2106,7 @@ const db = firebase.firestore();
       } else if(type==='free'){
         const e=s.record.entries.find(en=>en.id===entryId); if(!e) return '';
         score=e.score||0; comment=e.teacherComment||'';
-        title=`${esc(s.name)} · ${esc(e.title)}`; dateStr=`작성일: ${fmtDate(e.date)}`;
+        title=`${esc(s.name)} · ${esc(e.title)}`; dateStr=`작성일: ${fmtDateTime(e.createdAt)}`;
         bodyHtml=`<div style="background:#fafafa;border:1px solid var(--paper-line);border-radius:8px;padding:12px;font-size:13px;line-height:1.75;white-space:pre-wrap;">${esc(e.content||'(내용 없음)')}</div>`;
       }
 
