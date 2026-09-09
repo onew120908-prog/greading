@@ -1280,7 +1280,8 @@ AI를 참고 자료로 활용하는 것과 AI에게 생각을 위탁하는 것 �
           <div style="margin-top:4px;color:var(--forest);"><b>도움말</b> · <i>"이 글에서 저자는 ~을 주장한다. 나는 이 의견에 (동의한다 / 동의하지 않는다), 왜냐하면~"</i>으로 시작해 보세요.</div>
         </div>
       </div>
-      <div class="weeklock">${thisWeek ? '✅ 이번 주 글을 이미 썼어요. 아래에서 수정할 수 있어요.' : '✏️ 이번 주 글을 아직 쓰지 않았어요.'}</div>
+      <div class="section-title serif" style="font-size:15px;margin-bottom:6px;">✏️ 첫 번째 글쓰기</div>
+      <div class="weeklock">${thisWeek ? '✅ 이번 주 첫 번째 글을 이미 썼어요. 아래에서 수정할 수 있어요.' : '✏️ 이번 주 첫 번째 글을 아직 쓰지 않았어요.'}</div>
       ${thisWeekLocked ? `
         <div id="free-lock-area">${lockOverlayHtml(thisWeek)}</div>
       ` : `
@@ -1288,13 +1289,30 @@ AI를 참고 자료로 활용하는 것과 AI에게 생각을 위탁하는 것 �
         <div class="field"><label>내용 <span id="f-charcount" style="font-weight:400;color:var(--ink-soft);"></span></label><textarea id="f-content" style="min-height:200px;" placeholder="위 주제를 바탕으로 자유롭게 써 보세요.">${esc(thisWeek?.content||'')}</textarea></div>
         ${!thisWeek ? pwFieldHtml('🔒 비밀번호 설정') : ''}
         <div style="display:flex;gap:10px;flex-wrap:wrap;">
-          <button class="btn btn-primary" id="f-save">${thisWeek?'수정해서 저장':'이번 주 글쓰기 저장'}</button>
-          ${thisWeek ? `<button class="btn btn-ghost entry-del-btn" data-id="${thisWeek.id}" style="color:var(--clay);">이번 주 글 삭제</button>` : ''}
+          <button class="btn btn-primary" id="f-save">${thisWeek?'수정해서 저장':'첫 번째 글쓰기 저장'}</button>
+          ${thisWeek ? `<button class="btn btn-ghost entry-del-btn" data-id="${thisWeek.id}" style="color:var(--clay);">이번 주 첫 번째 글 삭제</button>` : ''}
         </div>
       `}
+      ${studentGrade()==='23기' ? (() => {
+        const wk2 = wk + '-2';
+        const thisWeek2 = frees.find(e=>e.weekKey===wk2);
+        const thisWeek2Locked = thisWeek2 && isEntryLocked(thisWeek2);
+        return `<div class="divider"></div>
+        <div class="section-title serif" style="font-size:15px;margin-bottom:6px;">✏️ 두 번째 글쓰기 <span style="font-size:12px;font-weight:400;color:var(--clay);">23기 추가 과제</span></div>
+        <div class="weeklock">${thisWeek2 ? '✅ 이번 주 두 번째 글을 이미 썼어요. 아래에서 수정할 수 있어요.' : '✏️ 이번 주 두 번째 글을 아직 쓰지 않았어요.'}</div>
+        ${thisWeek2Locked ? `<div id="free2-lock-area">${lockOverlayHtml(thisWeek2)}</div>` : `
+          <div class="field"><label>제목</label><input id="f2-title" value="${esc(thisWeek2?.title||'')}" placeholder="글의 제목을 지어 주세요"/></div>
+          <div class="field"><label>내용 <span id="f2-charcount" style="font-weight:400;color:var(--ink-soft);"></span></label><textarea id="f2-content" style="min-height:200px;" placeholder="두 번째 주제를 바탕으로 자유롭게 써 보세요.">${esc(thisWeek2?.content||'')}</textarea></div>
+          ${!thisWeek2 ? `<div class="field" style="margin-top:10px;"><label>🔒 비밀번호 설정 <span style="font-weight:400;color:var(--ink-soft);">(선택 · 비워두면 공개)</span></label><input id="f2-pw" type="password" placeholder="비밀번호 입력 (선택사항)" maxlength="20" autocomplete="new-password"/></div>` : ''}
+          <div style="display:flex;gap:10px;flex-wrap:wrap;">
+            <button class="btn btn-primary" id="f2-save">${thisWeek2?'수정해서 저장':'두 번째 글쓰기 저장'}</button>
+            ${thisWeek2 ? `<button class="btn btn-ghost entry-del-btn" data-id="${thisWeek2.id}" style="color:var(--clay);">이번 주 두 번째 글 삭제</button>` : ''}
+          </div>
+        `}`;
+      })() : ''}
       <div class="divider"></div>
       <div class="section-title serif" style="font-size:15px;">지난 글들</div>
-      ${frees.filter(e=>e.weekKey!==wk).length ? `<div class="entry-list">${frees.filter(e=>e.weekKey!==wk).map(e=>`
+      ${frees.filter(e=>e.weekKey!==wk && e.weekKey!==wk+'-2').length ? `<div class="entry-list">${frees.filter(e=>e.weekKey!==wk && e.weekKey!==wk+'-2').map(e=>`
         <div class="entry type-free">
           <div class="entry-top"><span class="entry-title">${esc(e.title)}${e.password?' 🔒':''}</span><div style="display:flex;align-items:center;gap:8px;"><span class="entry-date">${fmtDate(e.date)}</span><button class="btn btn-ghost btn-sm entry-del-btn" data-id="${e.id}" style="color:var(--clay);font-size:12px;padding:2px 8px;">삭제</button></div></div>
           ${isEntryLocked(e) ? lockOverlayHtml(e) : `<div class="entry-body">${esc(e.content)}</div>${revisionsHtml(e)}${feedbackHtml(e)}`}
@@ -1358,6 +1376,48 @@ AI를 참고 자료로 활용하는 것과 AI에게 생각을 위탁하는 것 �
       if(ok){ btnDone(btn); toast(pw ? '비밀 글을 저장했어요. 🔒' : '이번 주 글을 저장했어요.'); setTimeout(()=>render(), 1200); }
       else { btnReset(btn); }
     };
+
+    // 23기 두 번째 글쓰기
+    if(studentGrade()==='23기'){
+      const wk2 = wk + '-2';
+      const thisWeek2 = frees.find(e=>e.weekKey===wk2);
+      const f2Content = document.getElementById('f2-content');
+      const f2Charcount = document.getElementById('f2-charcount');
+      if(f2Content && f2Charcount){
+        const updateCount2 = () => {
+          const n = f2Content.value.length;
+          f2Charcount.textContent = n >= 500 ? `(${n}자 ✓)` : `(${n} / 500자)`;
+          f2Charcount.style.color = n >= 500 ? 'var(--forest)' : 'var(--clay)';
+        };
+        f2Content.addEventListener('input', updateCount2);
+        updateCount2();
+      }
+      const f2Save = document.getElementById('f2-save');
+      if(f2Save) f2Save.onclick = async () => {
+        if(saving) return;
+        const btn = f2Save;
+        const title = document.getElementById('f2-title').value.trim();
+        const content = document.getElementById('f2-content').value.trim();
+        const pw = document.getElementById('f2-pw')?.value.trim() || '';
+        if(!title || !content){ toast('제목과 내용을 입력해 주세요.'); return; }
+        if(content.length < 500){ toast(`내용이 너무 짧아요. 띄어쓰기 포함 500자 이상 써야 저장돼요. (현재 ${content.length}자)`); return; }
+        if(thisWeek2 && thisWeek2.title === title && thisWeek2.content === content){ toast('변경된 내용이 없어요.'); return; }
+        saving = true; btnSaving(btn);
+        if(thisWeek2){
+          if(!thisWeek2.revisions) thisWeek2.revisions = [];
+          thisWeek2.revisions.push({ title: thisWeek2.title, content: thisWeek2.content, date: thisWeek2.date, at: Date.now() });
+          thisWeek2.title = title; thisWeek2.content = content;
+        } else {
+          const entry = { id:uid(), type:'free', date:todayStr(), createdAt:Date.now(), weekKey:wk2, title, content, feedback:null };
+          if(pw) entry.password = pw;
+          state.record.entries.push(entry);
+        }
+        const ok = await saveRecord(state.studentName, state.record);
+        saving = false;
+        if(ok){ btnDone(btn); toast(pw ? '비밀 글을 저장했어요. 🔒' : '두 번째 글을 저장했어요.'); setTimeout(()=>render(), 1200); }
+        else { btnReset(btn); }
+      };
+    }
   }
 
   function renderMemoTab(panel){
