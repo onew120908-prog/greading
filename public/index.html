@@ -1220,22 +1220,12 @@ const db = firebase.firestore();
     };
   }
 
-  function renderFreeTab(panel){
-    const wk = getWeekKey(todayStr());
-    const frees = state.record.entries.filter(e=>e.type==='free').sort((a,b)=> b.createdAt-a.createdAt);
-    const thisWeek = frees.find(e=>e.weekKey===wk);
-    const thisWeekLocked = thisWeek && isEntryLocked(thisWeek);
-    panel.innerHTML = `
-      <div class="section-title serif">${esc(sectionLabel('free'))} · 이번 주 글쓰기</div>
-      <div class="section-desc">일주일에 한 편, 자유롭게 써 보세요.</div>
-      <div style="background:var(--sage);border-left:4px solid var(--forest);border-radius:0 12px 12px 0;padding:14px 16px;margin-bottom:14px;">
-        <div style="font-size:12px;font-weight:700;color:var(--forest);margin-bottom:4px;letter-spacing:0.03em;">✏️ 이번 주 글쓰기</div>
-        <div style="font-size:15px;font-weight:700;color:var(--ink);margin-bottom:10px;">읽고, 요약하고, 내 생각 쓰기</div>
-
-        <!-- 기사 -->
-        <div style="margin-bottom:12px;">
-          <button id="article-toggle" style="font-size:12px;font-weight:700;color:var(--forest);background:none;border:1px solid var(--forest);border-radius:6px;padding:4px 10px;cursor:pointer;">📰 이번 주 읽기 자료 펼치기</button>
-          <div id="article-body" hidden style="margin-top:10px;background:var(--paper);border:1px solid var(--paper-line);border-radius:8px;padding:14px;font-size:13px;line-height:1.85;color:var(--ink);white-space:pre-wrap;">AI가 대신 써준 글, 누구의 것인가 — 인공지능 시대의 공부와 성장
+  // ── 짓다 주제 목록 — 매주 새 항목 추가 ──
+  // article2 는 23기 전용 두 번째 읽기 자료 (없으면 생략)
+  const FREE_TOPICS = [
+    {
+      weekKey: '2026-W37',
+      article: `AI가 대신 써준 글, 누구의 것인가 — 인공지능 시대의 공부와 성장
 
 챗GPT가 등장한 이후, 학교 교실의 풍경이 달라졌다. 어려운 에세이 과제도, 복잡한 수학 풀이도, 심지어 독서 감상문도 이제는 인공지능(AI)이 몇 초 만에 그럴듯하게 완성해 준다. 학생들 사이에서는 "AI를 쓰지 않는 사람이 오히려 손해"라는 말까지 돌 정도다. 그렇다면 우리는 물어야 한다. AI가 대신 써준 글은 과연 누구의 것인가?
 
@@ -1245,14 +1235,8 @@ const db = firebase.firestore();
 
 더 깊이 들여다보면, 문제는 단순한 '부정 행위'를 넘어선다. AI에 의존하는 습관이 굳어지면, 학생들은 어려운 문제 앞에서 스스로 생각하려는 동기 자체를 잃는다. 이른바 '인지적 게으름'이다. 철학자 칸트는 "스스로 생각하는 것이 계몽의 출발"이라고 했다. 생각하는 힘을 키우지 않은 채 AI가 만든 결과물을 소비하는 데 익숙해진다면, 우리는 점점 더 스스로 판단하지 못하는 존재로 전락할 위험이 있다.
 
-AI를 참고 자료로 활용하는 것과 AI에게 생각을 위탁하는 것 사이에는 커다란 차이가 있다. 전자는 도구의 올바른 사용이고, 후자는 성장의 포기다. AI 시대에 가장 강한 사람은 AI를 가장 잘 쓰는 사람이 아니라, AI가 결코 흉내 낼 수 없는 것—자신만의 경험과 감정, 그리고 그것을 언어로 빚어내는 능력—을 갖춘 사람이다.</div>
-        </div>
-
-        <!-- 23기 전용 두 번째 기사 -->
-        ${studentGrade()==='23기' ? `<div style="margin-bottom:12px;">
-          <div style="font-size:11px;font-weight:700;color:var(--clay);margin-bottom:4px;">📌 23기 추가 과제</div>
-          <button id="article2-toggle" style="font-size:12px;font-weight:700;color:var(--clay);background:none;border:1px solid var(--clay);border-radius:6px;padding:4px 10px;cursor:pointer;">📰 두 번째 읽기 자료 펼치기</button>
-          <div id="article2-body" hidden style="margin-top:10px;background:var(--paper);border:1px solid var(--paper-line);border-radius:8px;padding:14px;font-size:13px;line-height:1.85;color:var(--ink);white-space:pre-wrap;">성적이 곧 미래인가 — 한국 교육의 성적 중심주의를 다시 생각한다
+AI를 참고 자료로 활용하는 것과 AI에게 생각을 위탁하는 것 사이에는 커다란 차이가 있다. 전자는 도구의 올바른 사용이고, 후자는 성장의 포기다. AI 시대에 가장 강한 사람은 AI를 가장 잘 쓰는 사람이 아니라, AI가 결코 흉내 낼 수 없는 것—자신만의 경험과 감정, 그리고 그것을 언어로 빚어내는 능력—을 갖춘 사람이다.`,
+      article2: `성적이 곧 미래인가 — 한국 교육의 성적 중심주의를 다시 생각한다
 
 한국의 중학생들은 하루 평균 10시간 이상을 공부에 쏟는다. 학교 수업이 끝난 뒤에도 학원을 두세 군데 돌고, 집에 돌아와 자정이 넘도록 교재를 붙든다. 이 모든 노력의 목적지는 단 하나, '좋은 성적'이다. 한국 사회에서 성적은 오랫동안 개인의 능력과 미래를 판단하는 가장 강력한 기준으로 작동해 왔다. 그런데 우리는 한 번쯤 물어야 하지 않을까. 성적이 정말 한 사람의 미래를 결정하는가?
 
@@ -1260,164 +1244,148 @@ AI를 참고 자료로 활용하는 것과 AI에게 생각을 위탁하는 것 �
 
 그러나 반대 입장도 만만치 않다. 성적은 기억력과 시험 적응력을 측정할 수는 있지만, 창의성이나 공감 능력, 문제 해결력, 리더십 같은 인간의 핵심 역량은 숫자로 환원되지 않는다. 세계적인 기업가나 예술가 중에는 학창 시절 성적이 평범했던 사람들이 적지 않다. 더 심각한 문제는 성적 경쟁이 청소년의 정신 건강을 갉아먹는다는 점이다. 한국 청소년의 주관적 행복 지수는 OECD 국가 중 최하위권을 오랫동안 맴돌고 있다. 성적이라는 단일한 기준이 다양한 가능성을 가진 아이들을 같은 선 위에 세워 순위를 매기는 구조 자체가 문제라는 지적이다.
 
-성적은 하나의 도구일 뿐, 그것이 전부일 수는 없다. 성적이 미래를 보장한다는 믿음과, 성적이 인생을 결정하지 않는다는 현실 사이에서, 지금 이 순간 우리는 어느 쪽에 더 가까이 서 있는가.</div>
-        </div>` : ''}
+성적은 하나의 도구일 뿐, 그것이 전부일 수는 없다. 성적이 미래를 보장한다는 믿음과, 성적이 인생을 결정하지 않는다는 현실 사이에서, 지금 이 순간 우리는 어느 쪽에 더 가까이 서 있는가.`,
+    },
+  ];
 
-        <!-- 글쓰기 형식 -->
-        <div style="background:var(--paper);border:1px solid var(--paper-line);border-radius:8px;padding:12px;margin-bottom:10px;font-size:12.5px;line-height:1.8;color:var(--ink);">
-          <div style="font-weight:700;color:var(--forest);margin-bottom:6px;">📋 글의 구조</div>
-          <div><b>1단락 · 요약</b> — 기사에서 가장 인상 깊었던 <u>주장 하나</u>를 선택하고 간단하게 요약해 보세요.<br><span style="color:var(--ink-soft);">→ "이 글에서 저자는 ~을 주장한다"로 시작하세요.</span></div>
-          <div style="margin-top:6px;"><b>2단락 · 나의 입장</b> — 그 주장에 동의하는지, 동의하지 않는지 한 문장으로 밝히고, 이유 2~3가지를 써요.</div>
-          <div style="margin-top:6px;"><b>3단락 · 근거와 예시</b> — 내 경험, 책, 뉴스 등 구체적인 예시로 뒷받침해요.</div>
-          <div style="margin-top:6px;"><b>4단락 · 마무리</b> — 내 입장을 다시 한번 정리하고 한 줄 소감을 써요.</div>
-        </div>
+  function renderFreeTab(panel){
+    const frees = state.record.entries.filter(e=>e.type==='free');
+    const freeMap = {};
+    frees.forEach(e=>{ freeMap[e.weekKey]=e; });
+    const is23 = studentGrade()==='23기';
+    const curWk = getWeekKey(todayStr());
+    const topics = [...FREE_TOPICS].reverse(); // 최신 주차 먼저
 
-        <!-- 도움말 -->
-        <div style="font-size:12px;color:var(--ink-soft);border-top:1px solid var(--paper-line);padding-top:8px;display:flex;flex-direction:column;gap:3px;">
-          <div><b>형식</b> · 요약 + 의견 에세이 (Summary-Response)</div>
-          <div><b>분량</b> · 500자 이상 (띄어쓰기 포함)</div>
+    const structureGuide = `
+      <div style="background:var(--paper);border:1px solid var(--paper-line);border-radius:8px;padding:12px;margin-bottom:14px;font-size:12.5px;line-height:1.8;color:var(--ink);">
+        <div style="font-weight:700;color:var(--forest);margin-bottom:6px;">📋 글의 구조</div>
+        <div><b>1단락 · 요약</b> — 기사에서 가장 인상 깊었던 <u>주장 하나</u>를 선택하고 간단하게 요약해 보세요.<br><span style="color:var(--ink-soft);">→ "이 글에서 저자는 ~을 주장한다"로 시작하세요.</span></div>
+        <div style="margin-top:6px;"><b>2단락 · 나의 입장</b> — 그 주장에 동의하는지, 동의하지 않는지 한 문장으로 밝히고, 이유 2~3가지를 써요.</div>
+        <div style="margin-top:6px;"><b>3단락 · 근거와 예시</b> — 내 경험, 책, 뉴스 등 구체적인 예시로 뒷받침해요.</div>
+        <div style="margin-top:6px;"><b>4단락 · 마무리</b> — 내 입장을 다시 한번 정리하고 한 줄 소감을 써요.</div>
+        <div style="margin-top:8px;border-top:1px solid var(--paper-line);padding-top:8px;font-size:12px;color:var(--ink-soft);display:flex;flex-direction:column;gap:3px;">
+          <div><b>형식</b> · 요약 + 의견 에세이 (Summary-Response) &nbsp;|&nbsp; <b>분량</b> · 500자 이상</div>
           <div><b>주의</b> · 요약에는 내 생각을 넣지 말고, 저자의 말만 정리하세요.</div>
           <div style="margin-top:4px;color:var(--forest);"><b>도움말</b> · <i>"이 글에서 저자는 ~을 주장한다. 나는 이 주장에 (동의한다 / 동의하지 않는다), 왜냐하면~"</i>으로 시작해 보세요.</div>
         </div>
-      </div>
-      <div class="section-title serif" style="font-size:15px;margin-bottom:6px;">✏️ 첫 번째 글쓰기</div>
-      <div class="weeklock">${thisWeek ? '✅ 이번 주 첫 번째 글을 이미 썼어요. 아래에서 수정할 수 있어요.' : '✏️ 이번 주 첫 번째 글을 아직 쓰지 않았어요.'}</div>
-      ${thisWeekLocked ? `
-        <div id="free-lock-area">${lockOverlayHtml(thisWeek)}</div>
-      ` : `
-        <div class="field"><label>제목</label><input id="f-title" value="${esc(thisWeek?.title||'')}" placeholder="글의 제목을 지어 주세요"/></div>
-        <div class="field"><label>내용 <span id="f-charcount" style="font-weight:400;color:var(--ink-soft);"></span></label><textarea id="f-content" style="min-height:200px;" placeholder="위 주제를 바탕으로 자유롭게 써 보세요.">${esc(thisWeek?.content||'')}</textarea></div>
-        ${!thisWeek ? pwFieldHtml('🔒 비밀번호 설정') : ''}
-        <div style="display:flex;gap:10px;flex-wrap:wrap;">
-          <button class="btn btn-primary" id="f-save">${thisWeek?'수정해서 저장':'첫 번째 글쓰기 저장'}</button>
-          ${thisWeek ? `<button class="btn btn-ghost entry-del-btn" data-id="${thisWeek.id}" style="color:var(--clay);">이번 주 첫 번째 글 삭제</button>` : ''}
+      </div>`;
+
+    const topicsHtml = topics.map(topic => {
+      const wk = topic.weekKey;
+      const [,w] = wk.split('-W');
+      const sfx = wk.replace(/[^a-zA-Z0-9]/g,'_');
+      const isCurWk = wk === curWk;
+      const entry = freeMap[wk];
+      const entry2 = (is23 && topic.article2) ? freeMap[wk+'-2'] : null;
+
+      const writeFormHtml = (e, sfxId, placeholder, pwHtml) => {
+        if(e && isEntryLocked(e)) return lockOverlayHtml(e);
+        return `
+          <div class="field"><label>제목</label><input id="ft-${sfxId}" value="${esc(e?.title||'')}" placeholder="${placeholder}"/></div>
+          <div class="field"><label>내용 <span id="fc-${sfxId}" style="font-weight:400;color:var(--ink-soft);"></span></label><textarea id="fv-${sfxId}" style="min-height:200px;" placeholder="주제를 바탕으로 자유롭게 써 보세요.">${esc(e?.content||'')}</textarea></div>
+          ${!e ? pwHtml : ''}
+          <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:4px;">
+            <button class="btn btn-primary" id="fs-${sfxId}">${e?'수정해서 저장':'저장하기'}</button>
+            ${e ? `<button class="btn btn-ghost entry-del-btn" data-id="${e.id}" style="color:var(--clay);">삭제</button>` : ''}
+          </div>`;
+      };
+
+      return `
+        <div style="background:var(--sage);border-left:4px solid var(--forest);border-radius:0 12px 12px 0;padding:14px 16px;margin-bottom:10px;">
+          <div style="font-size:12px;font-weight:700;color:var(--forest);margin-bottom:4px;letter-spacing:0.03em;">✏️ ${w}주차 글쓰기${isCurWk?' · 이번 주':' · 늦게 제출 가능'}</div>
+          <div style="font-size:15px;font-weight:700;color:var(--ink);margin-bottom:10px;">읽고, 요약하고, 내 생각 쓰기</div>
+          <button id="at-${sfx}" style="font-size:12px;font-weight:700;color:var(--forest);background:none;border:1px solid var(--forest);border-radius:6px;padding:4px 10px;cursor:pointer;margin-bottom:10px;">📰 읽기 자료 펼치기</button>
+          <div id="ab-${sfx}" hidden style="margin-bottom:12px;background:var(--paper);border:1px solid var(--paper-line);border-radius:8px;padding:14px;font-size:13px;line-height:1.85;color:var(--ink);white-space:pre-wrap;">${esc(topic.article)}</div>
+          ${is23 && topic.article2 ? `
+            <div style="font-size:11px;font-weight:700;color:var(--clay);margin-bottom:4px;">📌 23기 추가 과제</div>
+            <button id="at2-${sfx}" style="font-size:12px;font-weight:700;color:var(--clay);background:none;border:1px solid var(--clay);border-radius:6px;padding:4px 10px;cursor:pointer;margin-bottom:10px;">📰 두 번째 읽기 자료 펼치기</button>
+            <div id="ab2-${sfx}" hidden style="margin-bottom:12px;background:var(--paper);border:1px solid var(--paper-line);border-radius:8px;padding:14px;font-size:13px;line-height:1.85;color:var(--ink);white-space:pre-wrap;">${esc(topic.article2)}</div>
+          ` : ''}
         </div>
-      `}
-      ${studentGrade()==='23기' ? (() => {
-        const wk2 = wk + '-2';
-        const thisWeek2 = frees.find(e=>e.weekKey===wk2);
-        const thisWeek2Locked = thisWeek2 && isEntryLocked(thisWeek2);
-        return `<div class="divider"></div>
-        <div class="section-title serif" style="font-size:15px;margin-bottom:6px;">✏️ 두 번째 글쓰기 <span style="font-size:12px;font-weight:400;color:var(--clay);">23기 추가 과제</span></div>
-        <div class="weeklock">${thisWeek2 ? '✅ 이번 주 두 번째 글을 이미 썼어요. 아래에서 수정할 수 있어요.' : '✏️ 이번 주 두 번째 글을 아직 쓰지 않았어요.'}</div>
-        ${thisWeek2Locked ? `<div id="free2-lock-area">${lockOverlayHtml(thisWeek2)}</div>` : `
-          <div class="field"><label>제목</label><input id="f2-title" value="${esc(thisWeek2?.title||'')}" placeholder="글의 제목을 지어 주세요"/></div>
-          <div class="field"><label>내용 <span id="f2-charcount" style="font-weight:400;color:var(--ink-soft);"></span></label><textarea id="f2-content" style="min-height:200px;" placeholder="두 번째 주제를 바탕으로 자유롭게 써 보세요.">${esc(thisWeek2?.content||'')}</textarea></div>
-          ${!thisWeek2 ? `<div class="field" style="margin-top:10px;"><label>🔒 비밀번호 설정 <span style="font-weight:400;color:var(--ink-soft);">(선택 · 비워두면 공개)</span></label><input id="f2-pw" type="password" placeholder="비밀번호 입력 (선택사항)" maxlength="20" autocomplete="new-password"/></div>` : ''}
-          <div style="display:flex;gap:10px;flex-wrap:wrap;">
-            <button class="btn btn-primary" id="f2-save">${thisWeek2?'수정해서 저장':'두 번째 글쓰기 저장'}</button>
-            ${thisWeek2 ? `<button class="btn btn-ghost entry-del-btn" data-id="${thisWeek2.id}" style="color:var(--clay);">이번 주 두 번째 글 삭제</button>` : ''}
+        <div style="margin-bottom:4px;">
+          <div class="section-title serif" style="font-size:15px;margin-bottom:6px;">✏️ ${w}주차 첫 번째 글쓰기</div>
+          <div class="weeklock">${entry?'✅ 이미 썼어요. 아래에서 수정할 수 있어요.':'✏️ 아직 쓰지 않았어요.'}</div>
+          ${writeFormHtml(entry, sfx+'a', '글의 제목을 지어 주세요', `<div class="field" style="margin-top:10px;"><label>🔒 비밀번호 설정 <span style="font-weight:400;color:var(--ink-soft);">(선택 · 비워두면 공개)</span></label><input id="fp-${sfx}a" type="password" placeholder="비밀번호 입력 (선택사항)" maxlength="20" autocomplete="new-password"/></div>`)}
+        </div>
+        ${is23 && topic.article2 ? `
+          <div class="divider"></div>
+          <div style="margin-bottom:4px;">
+            <div class="section-title serif" style="font-size:15px;margin-bottom:6px;">✏️ ${w}주차 두 번째 글쓰기 <span style="font-size:12px;font-weight:400;color:var(--clay);">23기 추가 과제</span></div>
+            <div class="weeklock">${entry2?'✅ 이미 썼어요. 아래에서 수정할 수 있어요.':'✏️ 아직 쓰지 않았어요.'}</div>
+            ${writeFormHtml(entry2, sfx+'b', '두 번째 글의 제목을 지어 주세요', `<div class="field" style="margin-top:10px;"><label>🔒 비밀번호 설정 <span style="font-weight:400;color:var(--ink-soft);">(선택 · 비워두면 공개)</span></label><input id="fp-${sfx}b" type="password" placeholder="비밀번호 입력 (선택사항)" maxlength="20" autocomplete="new-password"/></div>`)}
           </div>
-        `}`;
-      })() : ''}
-      <div class="divider"></div>
-      <div class="section-title serif" style="font-size:15px;">지난 글들</div>
-      ${frees.filter(e=>e.weekKey!==wk && e.weekKey!==wk+'-2').length ? `<div class="entry-list">${frees.filter(e=>e.weekKey!==wk && e.weekKey!==wk+'-2').map(e=>`
-        <div class="entry type-free">
-          <div class="entry-top"><span class="entry-title">${esc(e.title)}${e.password?' 🔒':''}</span><div style="display:flex;align-items:center;gap:8px;"><span class="entry-date">${fmtDate(e.date)}</span><button class="btn btn-ghost btn-sm entry-del-btn" data-id="${e.id}" style="color:var(--clay);font-size:12px;padding:2px 8px;">삭제</button></div></div>
-          ${isEntryLocked(e) ? lockOverlayHtml(e) : `<div class="entry-body">${esc(e.content)}</div>${revisionsHtml(e)}${feedbackHtml(e)}`}
-        </div>`).join('')}</div>` : `<div class="empty"><div class="big">✒️</div>지난 글이 아직 없어요.</div>`}
+        ` : ''}
+        <div class="divider"></div>`;
+    }).join('');
+
+    panel.innerHTML = `
+      <div class="section-title serif">${esc(sectionLabel('free'))} · 글쓰기</div>
+      <div class="section-desc">매주 새 주제가 쌓여요. 기한이 지나도 언제든 늦게 제출할 수 있어요.</div>
+      ${structureGuide}
+      ${topicsHtml}
     `;
+
+    // 이벤트 바인딩
+    topics.forEach(topic => {
+      const wk = topic.weekKey;
+      const sfx = wk.replace(/[^a-zA-Z0-9]/g,'_');
+      const entry = freeMap[wk];
+      const entry2 = (is23 && topic.article2) ? freeMap[wk+'-2'] : null;
+
+      // 기사 토글
+      const atEl = document.getElementById(`at-${sfx}`);
+      const abEl = document.getElementById(`ab-${sfx}`);
+      if(atEl&&abEl) atEl.onclick=()=>{ abEl.hidden=!abEl.hidden; atEl.textContent=abEl.hidden?'📰 읽기 자료 펼치기':'📰 읽기 자료 접기'; };
+      const at2El = document.getElementById(`at2-${sfx}`);
+      const ab2El = document.getElementById(`ab2-${sfx}`);
+      if(at2El&&ab2El) at2El.onclick=()=>{ ab2El.hidden=!ab2El.hidden; at2El.textContent=ab2El.hidden?'📰 두 번째 읽기 자료 펼치기':'📰 두 번째 읽기 자료 접기'; };
+
+      // 글자수 카운터
+      const bindCount = id => {
+        const el=document.getElementById(`fv-${id}`), cnt=document.getElementById(`fc-${id}`);
+        if(!el||!cnt) return;
+        const upd=()=>{ const n=el.value.length; cnt.textContent=n>=500?`(${n}자 ✓)`:`(${n} / 500자)`; cnt.style.color=n>=500?'var(--forest)':'var(--clay)'; };
+        el.addEventListener('input',upd); upd();
+      };
+      bindCount(sfx+'a');
+      if(is23 && topic.article2) bindCount(sfx+'b');
+
+      // 저장 버튼
+      const bindSave = (sfxId, weekKey, curEntry) => {
+        const btn = document.getElementById(`fs-${sfxId}`);
+        if(!btn) return;
+        btn.onclick = async () => {
+          if(saving) return;
+          const title = document.getElementById(`ft-${sfxId}`)?.value.trim();
+          const content = document.getElementById(`fv-${sfxId}`)?.value.trim();
+          const pw = document.getElementById(`fp-${sfxId}`)?.value.trim() || '';
+          if(!title||!content){ toast('제목과 내용을 입력해 주세요.'); return; }
+          if(content.length<500){ toast(`500자 이상 써야 저장돼요. (현재 ${content.length}자)`); return; }
+          const cur = frees.find(e=>e.weekKey===weekKey);
+          if(cur && cur.title===title && cur.content===content){ toast('변경된 내용이 없어요.'); return; }
+          saving=true; btnSaving(btn);
+          if(cur){
+            if(!cur.revisions) cur.revisions=[];
+            cur.revisions.push({title:cur.title,content:cur.content,date:cur.date,at:Date.now()});
+            cur.title=title; cur.content=content;
+          } else {
+            const e={id:uid(),type:'free',date:todayStr(),createdAt:Date.now(),weekKey,title,content,feedback:null};
+            if(pw) e.password=pw;
+            state.record.entries.push(e);
+          }
+          const ok=await saveRecord(state.studentName,state.record);
+          saving=false;
+          if(ok){ btnDone(btn); toast(pw?'비밀 글을 저장했어요. 🔒':'글을 저장했어요.'); setTimeout(()=>render(),1200); }
+          else btnReset(btn);
+        };
+      };
+      bindSave(sfx+'a', wk, entry);
+      if(is23 && topic.article2) bindSave(sfx+'b', wk+'-2', entry2);
+    });
+
     bindRevisionToggles(panel);
     bindLockOverlays(panel, ()=>renderFreeTab(panel));
     bindDeleteButtons(panel, '글', ()=>renderFreeTab(panel));
-    const articleToggle = document.getElementById('article-toggle');
-    const articleBody = document.getElementById('article-body');
-    if(articleToggle && articleBody){
-      articleToggle.onclick = () => {
-        articleBody.hidden = !articleBody.hidden;
-        articleToggle.textContent = articleBody.hidden ? '📰 이번 주 읽기 자료 펼치기' : '📰 이번 주 읽기 자료 접기';
-      };
-    }
-    const article2Toggle = document.getElementById('article2-toggle');
-    const article2Body = document.getElementById('article2-body');
-    if(article2Toggle && article2Body){
-      article2Toggle.onclick = () => {
-        article2Body.hidden = !article2Body.hidden;
-        article2Toggle.textContent = article2Body.hidden ? '📰 두 번째 읽기 자료 펼치기' : '📰 두 번째 읽기 자료 접기';
-      };
-    }
-    const fContent = document.getElementById('f-content');
-    const fCharcount = document.getElementById('f-charcount');
-    if(fContent && fCharcount){
-      const updateCount = () => {
-        const n = fContent.value.length;
-        fCharcount.textContent = n >= 500 ? `(${n}자 ✓)` : `(${n} / 500자)`;
-        fCharcount.style.color = n >= 500 ? 'var(--forest)' : 'var(--clay)';
-      };
-      fContent.addEventListener('input', updateCount);
-      updateCount();
-    }
-    const fSave = document.getElementById('f-save');
-    if(fSave) fSave.onclick = async () => {
-      if(saving) return;
-      const btn = fSave;
-      const title = document.getElementById('f-title').value.trim();
-      const content = document.getElementById('f-content').value.trim();
-      const pw = panel.querySelector('.entry-pw-field')?.value.trim() || '';
-      if(!title || !content){ toast('제목과 내용을 입력해 주세요.'); return; }
-      if(content.length < 500){ toast(`내용이 너무 짧아요. 띄어쓰기 포함 500자 이상 써야 저장돼요. (현재 ${content.length}자)`); return; }
-      if(thisWeek && thisWeek.title === title && thisWeek.content === content){
-        toast('변경된 내용이 없어요.'); return;
-      }
-      saving = true;
-      btnSaving(btn);
-      if(thisWeek){
-        if(!thisWeek.revisions) thisWeek.revisions = [];
-        thisWeek.revisions.push({ title: thisWeek.title, content: thisWeek.content, date: thisWeek.date, at: Date.now() });
-        thisWeek.title = title; thisWeek.content = content;
-      } else {
-        const entry = { id:uid(), type:'free', date:todayStr(), createdAt:Date.now(), weekKey:wk, title, content, feedback:null };
-        if(pw) entry.password = pw;
-        state.record.entries.push(entry);
-      }
-      const ok = await saveRecord(state.studentName, state.record);
-      saving = false;
-      if(ok){ btnDone(btn); toast(pw ? '비밀 글을 저장했어요. 🔒' : '이번 주 글을 저장했어요.'); setTimeout(()=>render(), 1200); }
-      else { btnReset(btn); }
-    };
-
-    // 23기 두 번째 글쓰기
-    if(studentGrade()==='23기'){
-      const wk2 = wk + '-2';
-      const thisWeek2 = frees.find(e=>e.weekKey===wk2);
-      const f2Content = document.getElementById('f2-content');
-      const f2Charcount = document.getElementById('f2-charcount');
-      if(f2Content && f2Charcount){
-        const updateCount2 = () => {
-          const n = f2Content.value.length;
-          f2Charcount.textContent = n >= 500 ? `(${n}자 ✓)` : `(${n} / 500자)`;
-          f2Charcount.style.color = n >= 500 ? 'var(--forest)' : 'var(--clay)';
-        };
-        f2Content.addEventListener('input', updateCount2);
-        updateCount2();
-      }
-      const f2Save = document.getElementById('f2-save');
-      if(f2Save) f2Save.onclick = async () => {
-        if(saving) return;
-        const btn = f2Save;
-        const title = document.getElementById('f2-title').value.trim();
-        const content = document.getElementById('f2-content').value.trim();
-        const pw = document.getElementById('f2-pw')?.value.trim() || '';
-        if(!title || !content){ toast('제목과 내용을 입력해 주세요.'); return; }
-        if(content.length < 500){ toast(`내용이 너무 짧아요. 띄어쓰기 포함 500자 이상 써야 저장돼요. (현재 ${content.length}자)`); return; }
-        if(thisWeek2 && thisWeek2.title === title && thisWeek2.content === content){ toast('변경된 내용이 없어요.'); return; }
-        saving = true; btnSaving(btn);
-        if(thisWeek2){
-          if(!thisWeek2.revisions) thisWeek2.revisions = [];
-          thisWeek2.revisions.push({ title: thisWeek2.title, content: thisWeek2.content, date: thisWeek2.date, at: Date.now() });
-          thisWeek2.title = title; thisWeek2.content = content;
-        } else {
-          const entry = { id:uid(), type:'free', date:todayStr(), createdAt:Date.now(), weekKey:wk2, title, content, feedback:null };
-          if(pw) entry.password = pw;
-          state.record.entries.push(entry);
-        }
-        const ok = await saveRecord(state.studentName, state.record);
-        saving = false;
-        if(ok){ btnDone(btn); toast(pw ? '비밀 글을 저장했어요. 🔒' : '두 번째 글을 저장했어요.'); setTimeout(()=>render(), 1200); }
-        else { btnReset(btn); }
-      };
-    }
   }
 
   function renderMemoTab(panel){
