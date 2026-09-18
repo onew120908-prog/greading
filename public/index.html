@@ -2078,7 +2078,7 @@ AI를 참고 자료로 활용하는 것과 AI에게 생각을 위탁하는 것 �
           }
           return `<div class="ws-section">
             <div class="ws-section-label">${esc(sec.label)}</div>
-            <textarea class="ws-textarea" data-sid="${si}" placeholder="${esc(sec.placeholder||'내용을 작성해 주세요.')}">${esc(val)}</textarea>
+            <textarea class="ws-textarea" data-sid="${si}">${esc(val)}</textarea>
           </div>`;
         }
         if(sec.type === 'questions'){
@@ -2093,7 +2093,7 @@ AI를 참고 자료로 활용하는 것과 AI에게 생각을 위탁하는 것 �
             }
             return `<div class="ws-q">
               <div class="ws-q-text">${esc(q)}</div>
-              <textarea class="ws-textarea" data-sid="${si}" data-qid="${qi}" placeholder="답을 작성해 주세요." style="min-height:70px;">${esc(val)}</textarea>
+              <textarea class="ws-textarea" data-sid="${si}" data-qid="${qi}" style="min-height:70px;">${esc(val)}</textarea>
             </div>`;
           }).join('');
           return `<div class="ws-section">
@@ -2164,7 +2164,7 @@ AI를 참고 자료로 활용하는 것과 AI에게 생각을 위탁하는 것 �
             const val = ans[`s${si}`] || '';
             return `<div class="ws-section">
               <div class="ws-section-label">${esc(sec.label)}</div>
-              <textarea class="ws-textarea" data-sid="${si}" placeholder="${esc(sec.placeholder||'내용을 작성해 주세요.')}">${esc(val)}</textarea>
+              <textarea class="ws-textarea" data-sid="${si}">${esc(val)}</textarea>
             </div>`;
           }
           if(sec.type === 'questions'){
@@ -2172,7 +2172,7 @@ AI를 참고 자료로 활용하는 것과 AI에게 생각을 위탁하는 것 �
               const val = ans[`s${si}_q${qi}`] || '';
               return `<div class="ws-q">
                 <div class="ws-q-text">${esc(q)}</div>
-                <textarea class="ws-textarea" data-sid="${si}" data-qid="${qi}" placeholder="답을 작성해 주세요." style="min-height:70px;">${esc(val)}</textarea>
+                <textarea class="ws-textarea" data-sid="${si}" data-qid="${qi}" style="min-height:70px;">${esc(val)}</textarea>
               </div>`;
             }).join('');
             return `<div class="ws-section">
