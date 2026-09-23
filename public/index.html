@@ -558,9 +558,15 @@ const db = firebase.firestore();
     const dim = new Date(y, m, 0).getDate();
     const todayS = todayStr();
     const dailyDates = new Set(record.entries.filter(e=>e.type==='daily').map(e=>e.date));
-    const freeDates  = new Set(record.entries.filter(e=>e.type==='free').map(e=>e.date));
-    const bookDates  = new Set(record.entries.filter(e=>e.type==='book').map(e=>e.date));
-    const wsDates = new Set(Object.values(record.worksheets||{}).filter(w=>w.submittedAt).map(w=>w.submittedAt.slice(0,10)));
+    // count submissions per date for 잇다·짓다·읽다·펼치다
+    const freeCount  = {};
+    record.entries.filter(e=>e.type==='free').forEach(e=>{ freeCount[e.date] = (freeCount[e.date]||0)+1; });
+    const bookCount  = {};
+    record.entries.filter(e=>e.type==='book').forEach(e=>{ bookCount[e.date] = (bookCount[e.date]||0)+1; });
+    const wsCount = {};
+    Object.values(record.worksheets||{}).filter(w=>w.submittedAt).forEach(w=>{
+      const d = w.submittedAt.slice(0,10); wsCount[d] = (wsCount[d]||0)+1;
+    });
     const firstDow = new Date(y, m-1, 1).getDay();
     const cells = [];
     for(let i=0;i<firstDow;i++) cells.push(null);
@@ -569,11 +575,14 @@ const db = firebase.firestore();
       const ds = `${y}-${pad2(m)}-${pad2(d)}`;
       const isFuture = ds > todayS;
       const has = dailyDates.has(ds);
-      const hasFree = freeDates.has(ds);
-      const hasBook = bookDates.has(ds);
-      const hasWs = wsDates.has(ds);
+      const freeN = freeCount[ds]||0;
+      const bookN = bookCount[ds]||0;
+      const wsN   = wsCount[ds]||0;
+      const hasFree = freeN > 0;
+      const hasBook = bookN > 0;
+      const hasWs   = wsN > 0;
       if(!isFuture){ elapsed++; if(has) got++; }
-      cells.push({ day:d, date:ds, has, hasFree, hasBook, hasWs, isFuture, isToday: ds===todayS });
+      cells.push({ day:d, date:ds, has, hasFree, hasBook, hasWs, freeN, bookN, wsN, isFuture, isToday: ds===todayS });
     }
     const isCurrentMonth = ym === monthKey(todayS);
     return { y, m, dim, cells, got, elapsed, isCurrentMonth };
@@ -604,9 +613,9 @@ const db = firebase.firestore();
           else cls = 'miss';
           const stickers = !c.isFuture ? [
             c.has    ? '⭐' : '',
-            c.hasFree ? '<span style="color:#E87070;">★</span>' : '',
-            c.hasBook ? '<span style="color:#9B70C8;">★</span>' : '',
-            c.hasWs   ? '<span style="color:#2E7D32;">★</span>' : '',
+            '<span style="color:#E87070;">★</span>'.repeat(c.freeN||0),
+            '<span style="color:#9B70C8;">★</span>'.repeat(c.bookN||0),
+            '<span style="color:#2E7D32;">★</span>'.repeat(c.wsN||0),
           ].filter(Boolean).join('') : '';
           return `<div class="cal-cell ${cls} ${c.isToday?'today':''}">${anySticker ? `<div class="sticker-row">${stickers}</div>` : `<span class="num">${c.day}</span>`}</div>`;
         }).join('')}
