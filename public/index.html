@@ -2531,7 +2531,24 @@ AI를 참고 자료로 활용하는 것과 AI에게 생각을 위탁하는 것 �
       const extraWkSet = new Set();
       sortedStudents.forEach(s=>{ s.record.entries.filter(e=>e.type==='free'&&e.weekKey&&e.weekKey.endsWith('-2')).forEach(e=>extraWkSet.add(e.weekKey)); });
       extraWkSet.add(recentWeeks[recentWeeks.length-1]+'-2');
-      const allCols = [...recentWeeks, ...[...extraWkSet].sort()];
+      // W37-2 → W38 추가과제로 표시: W37-2를 W38 다음 위치에 'W38-alias-W37-2' 형태로 매핑
+      const colAliasMap = {}; // displayKey -> realKey
+      const sortedExtra = [...extraWkSet].sort().map(wk=>{
+        // W37-2처럼 실제 weekKey가 recentWeeks의 마지막+1 주차보다 이전 주차의 -2인 경우
+        // 해당 -2를 바로 다음 주차의 추가과제로 보여줌
+        const baseWk = wk.replace('-2','');
+        const nextIdx = recentWeeks.indexOf(baseWk);
+        if(nextIdx >= 0 && nextIdx < recentWeeks.length - 1){
+          const nextWk = recentWeeks[nextIdx+1];
+          const aliasKey = nextWk+'-2';
+          if(!extraWkSet.has(aliasKey)){
+            colAliasMap[aliasKey] = wk;
+            return aliasKey;
+          }
+        }
+        return wk;
+      });
+      const allCols = [...recentWeeks, ...sortedExtra];
       if(!sortedStudents.length) return `<div class="empty"><div class="big">✒️</div>학생이 없어요.</div>`;
       return `<div style="overflow-x:auto;"><table style="border-collapse:collapse;width:100%;min-width:${120+allCols.length*90}px;font-size:13px;">
         <thead><tr style="background:var(--sage);">
@@ -2542,7 +2559,7 @@ AI를 참고 자료로 활용하는 것과 AI에게 생각을 위탁하는 것 �
           const freeMap={};
           s.record.entries.filter(e=>e.type==='free').forEach(e=>{ freeMap[e.weekKey]=e; });
           return `<tr><td style="padding:8px 12px;border:1px solid var(--paper-line);font-weight:600;">${esc(s.name)}</td>
-          ${allCols.map(wk=>{ const e=freeMap[wk]; return cellHtml(!!e, e&&e.score, 'free-cell', `data-student="${esc(s.name)}" data-eid="${esc(e?e.id:'')}" data-wk="${esc(wk)}"`); }).join('')}
+          ${allCols.map(wk=>{ const realWk=colAliasMap[wk]||wk; const e=freeMap[realWk]; return cellHtml(!!e, e&&e.score, 'free-cell', `data-student="${esc(s.name)}" data-eid="${esc(e?e.id:'')}" data-wk="${esc(realWk)}"`); }).join('')}
           </tr>`;
         }).join('')}</tbody>
       </table></div>${legend}`;
