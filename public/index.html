@@ -1099,7 +1099,7 @@ const db = firebase.firestore();
     const stats = calendarStats(state.record, state.stickerMonth);
     panel.innerHTML = `
       <div class="section-title serif">${esc(sectionLabel('stickers'))} · 이번 달 스티커판</div>
-      <div class="section-desc">읽다에 기록하면 ⭐, 짓다에 쓰면 <span style="color:#E87070;">★</span>, 잇다에 완독을 기록하면 <span style="color:#9B70C8;">★</span>가 붙어요. 한 달을 빠짐없이 채우면 선생님께 선물을 받을 수 있어요!</div>
+      <div class="section-desc">읽다에 기록하면 ⭐, 짓다에 쓰면 <span style="color:#E87070;">★</span>, 잇다에 완독을 기록하면 <span style="color:#9B70C8;">★</span>, 펼치다를 제출하면 <span style="color:#2E7D32;">★</span>가 붙어요. 한 달을 빠짐없이 채우면 선생님께 선물을 받을 수 있어요!</div>
       ${calendarHtml(stats, 'cal')}
     `;
     document.getElementById('cal-prev').onclick = () => { state.stickerMonth = shiftMonth(state.stickerMonth,-1); renderStickersTab(panel); };
