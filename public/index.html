@@ -2788,6 +2788,10 @@ AI를 참고 자료로 활용하는 것과 AI에게 생각을 위탁하는 것 �
               </div>
             `).join('') : `<div class="empty" style="padding:20px;"><div class="big">🧑‍🎓</div>등록된 학생이 없어요.</div>`}
           </div>
+          <div style="margin-top:12px;">
+            <button class="btn" id="s-recover-students" style="background:#e8a020;color:#fff;">학생 목록 복구</button>
+            <div class="section-desc" style="margin-top:6px;">학생 목록이 사라졌을 때 기록(records) 데이터를 기반으로 복구합니다.</div>
+          </div>
         </div>
       </div>`;
 
@@ -2881,6 +2885,20 @@ AI를 참고 자료로 활용하는 것과 AI에게 생각을 위탁하는 것 �
         if(ok){ toast('활동지를 삭제했어요.'); renderTeacherSettings(); }
       };
     });
+
+    document.getElementById('s-recover-students').onclick = async () => {
+      if(!confirm('records 컬렉션에서 학생 목록을 복구합니다.\n기존 목록이 덮어씌워집니다. 계속하시겠어요?')) return;
+      try {
+        const snap = await db.collection('records').get();
+        const list = snap.docs.map(d=>d.id).filter(id=>id&&id!=='_placeholder');
+        if(!list.length){ toast('복구할 학생 기록이 없어요.'); return; }
+        await saveStudents(list);
+        toast(`${list.length}명 복구 완료!`);
+        await loadTeacherList();
+        state.teacherView = 'settings';
+        render();
+      } catch(e){ console.error(e); toast('복구 중 오류가 발생했어요.'); }
+    };
 
     shell.querySelectorAll('.stu-del').forEach(btn=>{
       btn.onclick = async () => {
