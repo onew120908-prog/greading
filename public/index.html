@@ -1342,7 +1342,7 @@ AI를 참고 자료로 활용하는 것과 AI에게 생각을 위탁하는 것 �
         <div style="margin-bottom:4px;">
           <div class="section-title serif" style="font-size:15px;margin-bottom:6px;">✏️ ${w}주차 첫 번째 글쓰기</div>
           <div class="weeklock">${entry?'✅ 이미 썼어요. 아래에서 수정할 수 있어요.':'✏️ 아직 쓰지 않았어요.'}</div>
-          ${entry?.feedback ? `<div style="background:#F3EDFF;border-left:4px solid #7B5EA7;border-radius:0 10px 10px 0;padding:14px 16px;margin-bottom:12px;font-size:13px;line-height:1.85;white-space:pre-wrap;color:var(--ink);"><div style="font-size:12px;font-weight:700;color:#7B5EA7;margin-bottom:6px;">✨ AI 평가</div>${esc(entry.feedback)}</div>` : ''}
+          ${entry?.teacherComment ? `<div style="background:#F3EDFF;border-left:4px solid #7B5EA7;border-radius:0 10px 10px 0;padding:14px 16px;margin-bottom:12px;font-size:13px;line-height:1.85;white-space:pre-wrap;color:var(--ink);"><div style="font-size:12px;font-weight:700;color:#7B5EA7;margin-bottom:6px;">💬 선생님 피드백</div>${esc(entry.teacherComment)}</div>` : ''}
           ${writeFormHtml(entry, sfx+'a', '글의 제목을 지어 주세요', `<div class="field" style="margin-top:10px;"><label>🔒 비밀번호 설정 <span style="font-weight:400;color:var(--ink-soft);">(선택 · 비워두면 공개)</span></label><input id="fp-${sfx}a" type="password" placeholder="비밀번호 입력 (선택사항)" maxlength="20" autocomplete="new-password"/></div>`)}
         </div>
         ${is23 && topic.article2 ? `
@@ -1413,40 +1413,7 @@ AI를 참고 자료로 활용하는 것과 AI에게 생각을 위탁하는 것 �
           }
           const ok=await saveRecord(state.studentName,state.record);
           saving=false;
-          if(ok){
-            btnDone(btn); toast(pw?'비밀 글을 저장했어요. 🔒':'글을 저장했어요.');
-            // AI 평가 버튼 표시
-            const aiBtnId = `ai-eval-${sfxId}`;
-            let aiBtn = document.getElementById(aiBtnId);
-            if(!aiBtn){
-              aiBtn = document.createElement('button');
-              aiBtn.id = aiBtnId;
-              aiBtn.className = 'btn';
-              aiBtn.style.cssText = 'background:#7B5EA7;color:#fff;margin-top:8px;';
-              aiBtn.textContent = '✨ AI 평가 받기';
-              btn.parentNode.appendChild(aiBtn);
-            }
-            aiBtn.onclick = async () => {
-              const entryNow = state.record.entries.find(e=>e.type==='free'&&e.weekKey===weekKey);
-              if(!entryNow){ toast('저장된 글이 없어요.'); return; }
-              aiBtn.disabled=true; aiBtn.textContent='평가 중...';
-              try {
-                const res = await fetch('/api/evaluate', {
-                  method:'POST',
-                  headers:{'Content-Type':'application/json'},
-                  body: JSON.stringify({ essay: entryNow.content, article: topic.article })
-                });
-                const data = await res.json();
-                if(data.error){ toast('오류: '+data.error); aiBtn.disabled=false; aiBtn.textContent='✨ AI 평가 받기'; return; }
-                // feedback 저장
-                entryNow.feedback = data.result;
-                await saveRecord(state.studentName, state.record);
-                toast('AI 평가가 저장됐어요!');
-                setTimeout(()=>render(), 800);
-              } catch(e){ toast('평가 요청 실패'); aiBtn.disabled=false; aiBtn.textContent='✨ AI 평가 받기'; }
-            };
-            setTimeout(()=>render(),1200);
-          }
+          if(ok){ btnDone(btn); toast(pw?'비밀 글을 저장했어요. 🔒':'글을 저장했어요.'); setTimeout(()=>render(),1200); }
           else btnReset(btn);
         };
       };
@@ -2713,7 +2680,8 @@ AI를 참고 자료로 활용하는 것과 AI에게 생각을 위탁하는 것 �
               ${[1,2,3].map(n=>`<button class="btn ${score===n?'btn-primary':'btn-ghost'} btn-sm act-score-btn" data-score="${n}">${scoreLabel(n)}</button>`).join('')}
               <button class="btn btn-ghost btn-sm act-score-btn" data-score="0" style="border:1px solid var(--paper-line);">초기화</button>
             </div>
-            <div class="field" style="margin-bottom:10px;"><label style="font-size:12px;">한 줄 코멘트 (선택)</label><textarea id="act-modal-comment" style="min-height:60px;font-size:13px;border:1px solid var(--paper-line);border-radius:8px;padding:8px;width:100%;box-sizing:border-box;">${esc(comment)}</textarea></div>
+            <div class="field" style="margin-bottom:6px;"><label style="font-size:12px;">선생님 코멘트 (선택)</label><textarea id="act-modal-comment" style="min-height:80px;font-size:13px;border:1px solid var(--paper-line);border-radius:8px;padding:8px;width:100%;box-sizing:border-box;">${esc(comment)}</textarea></div>
+            ${type==='free'?`<button class="btn btn-ghost btn-sm" id="act-ai-draft" style="margin-bottom:10px;border:1px solid var(--paper-line);">✨ AI 초안 생성</button>`:''}
             <button class="btn btn-primary btn-sm" id="act-modal-save">평가 저장</button>
           </div>
         </div>
@@ -2763,6 +2731,23 @@ AI를 참고 자료로 활용하는 것과 AI에게 생각을 위탁하는 것 �
           shell.querySelectorAll('.act-score-btn').forEach(b=>{ b.className=`btn ${parseInt(b.dataset.score)===currentScore&&currentScore>0?'btn-primary':'btn-ghost'} btn-sm act-score-btn`; });
         };
       });
+
+      const aiDraftBtn = document.getElementById('act-ai-draft');
+      if(aiDraftBtn){
+        aiDraftBtn.onclick = async ()=>{
+          const e = s && s.record.entries.find(en=>en.id===entryId);
+          if(!e){ toast('에세이를 찾을 수 없어요.'); return; }
+          const topic = FREE_TOPICS.find(t=>t.weekKey===e.weekKey);
+          aiDraftBtn.disabled = true; aiDraftBtn.textContent = '생성 중...';
+          try {
+            const res = await fetch('/api/evaluate', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ essay: e.content||'', article: topic?topic.article:'' }) });
+            const data = await res.json();
+            if(data.result){ document.getElementById('act-modal-comment').value = data.result; }
+            else toast(data.error||'AI 평가 실패');
+          } catch(err){ toast('AI 평가 요청 실패'); }
+          aiDraftBtn.disabled = false; aiDraftBtn.textContent = '✨ AI 초안 생성';
+        };
+      }
 
       document.getElementById('act-modal-save').onclick = async ()=>{
         if(!s) return;
