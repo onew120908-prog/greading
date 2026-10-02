@@ -924,7 +924,11 @@ const db = firebase.firestore();
     document.getElementById('home').onclick = () => { state.role=null; state.studentName=null; render(); };
     document.getElementById('switch-name').onclick = () => { state.studentName=null; state.record=null; render(); };
     shell.querySelectorAll('.tabbtn').forEach(b=>{
-      b.onclick = () => { state.tab = b.dataset.tab; render(); };
+      b.onclick = async () => {
+        state.tab = b.dataset.tab;
+        if(state.tab==='free') state.record = await loadRecord(state.studentName);
+        render();
+      };
     });
     const panel = document.getElementById('panel');
     if(state.tab==='daily') renderDailyTab(panel);
