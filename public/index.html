@@ -1406,16 +1406,19 @@ AI를 참고 자료로 활용하는 것과 AI에게 생각을 위탁하는 것 �
           const cur = frees.find(e=>e.weekKey===weekKey);
           if(cur && cur.title===title && cur.content===content){ toast('변경된 내용이 없어요.'); return; }
           saving=true; btnSaving(btn);
-          if(cur){
-            if(!cur.revisions) cur.revisions=[];
-            cur.revisions.push({title:cur.title,content:cur.content,date:cur.date,at:Date.now()});
-            cur.title=title; cur.content=content;
+          const freshRec = await loadRecord(state.studentName);
+          state.record = freshRec;
+          const freshCur = freshRec.entries.find(e=>e.type==='free'&&e.weekKey===weekKey);
+          if(freshCur){
+            if(!freshCur.revisions) freshCur.revisions=[];
+            freshCur.revisions.push({title:freshCur.title,content:freshCur.content,date:freshCur.date,at:Date.now()});
+            freshCur.title=title; freshCur.content=content;
           } else {
-            const e={id:uid(),type:'free',date:todayStr(),createdAt:Date.now(),weekKey,title,content,feedback:null};
+            const e={id:uid(),type:'free',date:todayStr(),createdAt:Date.now(),weekKey,title,content};
             if(pw) e.password=pw;
-            state.record.entries.push(e);
+            freshRec.entries.push(e);
           }
-          const ok=await saveRecord(state.studentName,state.record);
+          const ok=await saveRecord(state.studentName,freshRec);
           saving=false;
           if(ok){ btnDone(btn); toast(pw?'비밀 글을 저장했어요. 🔒':'글을 저장했어요.'); setTimeout(()=>render(),1200); }
           else btnReset(btn);
