@@ -2530,15 +2530,16 @@ AI를 참고 자료로 활용하는 것과 AI에게 생각을 위탁하는 것 �
 
     function scoreLabel(sc){ return sc===3?'★★★':sc===2?'★★':sc===1?'★':'-'; }
     function scoreColor(sc){ return sc===3?'var(--forest)':sc===2?'var(--gold)':sc===1?'var(--clay)':'var(--ink-soft)'; }
-    function cellHtml(submitted, score, cls, dsAttrs){
+    function cellHtml(submitted, score, cls, dsAttrs, revised){
       if(!submitted) return `<td style="padding:8px;text-align:center;border:1px solid var(--paper-line);color:var(--ink-soft);">⬜</td>`;
       const icon = score?'🟢':'🟡';
       return `<td style="padding:8px;text-align:center;border:1px solid var(--paper-line);cursor:pointer;background:${score?'var(--sage)':'#FFFDE7'};" class="${cls}" ${dsAttrs}>
         <div>${icon}</div>
         ${score?`<div style="font-size:11px;color:${scoreColor(score)};font-weight:700;">${scoreLabel(score)}</div>`:'<div style="font-size:10px;color:var(--ink-soft);">미평가</div>'}
+        ${revised?`<div style="font-size:10px;color:#7B5EA7;font-weight:700;">수정됨</div>`:''}
       </td>`;
     }
-    const legend = `<div style="font-size:11px;color:var(--ink-soft);margin-top:6px;">⬜ 미제출 &nbsp;&nbsp; 🟡 제출 (미평가) &nbsp;&nbsp; 🟢 제출 + 평가 완료</div>`;
+    const legend = `<div style="font-size:11px;color:var(--ink-soft);margin-top:6px;">⬜ 미제출 &nbsp;&nbsp; 🟡 제출 (미평가) &nbsp;&nbsp; 🟢 제출 + 평가 완료 &nbsp;&nbsp; <span style="color:#7B5EA7;font-weight:700;">수정됨</span> 피드백 후 수정 제출</div>`;
 
     // ── 펼치다 그리드 ──
     function renderWsGrid(){
@@ -2634,7 +2635,7 @@ AI를 참고 자료로 활용하는 것과 AI에게 생각을 위탁하는 것 �
           const freeMap={};
           s.record.entries.filter(e=>e.type==='free').forEach(e=>{ freeMap[e.weekKey]=e; });
           return `<tr><td style="padding:8px 12px;border:1px solid var(--paper-line);font-weight:600;">${esc(s.name)}</td>
-          ${allCols.map(wk=>{ const realWk=colAliasMap[wk]||wk; const e=freeMap[realWk]; return cellHtml(!!e, e&&e.score, 'free-cell', `data-student="${esc(s.name)}" data-eid="${esc(e?e.id:'')}" data-wk="${esc(realWk)}"`); }).join('')}
+          ${allCols.map(wk=>{ const realWk=colAliasMap[wk]||wk; const e=freeMap[realWk]; const revised=!!(e&&e.revisions&&e.revisions.length&&e.teacherComment); return cellHtml(!!e, e&&e.score, 'free-cell', `data-student="${esc(s.name)}" data-eid="${esc(e?e.id:'')}" data-wk="${esc(realWk)}"`, revised); }).join('')}
           </tr>`;
         }).join('')}</tbody>
       </table></div>${legend}`;
@@ -2688,7 +2689,7 @@ AI를 참고 자료로 활용하는 것과 AI에게 생각을 위탁하는 것 �
               <button class="btn btn-ghost btn-sm act-score-btn" data-score="0" style="border:1px solid var(--paper-line);">초기화</button>
             </div>
             <div class="field" style="margin-bottom:6px;"><label style="font-size:12px;">선생님 코멘트 (선택)</label><textarea id="act-modal-comment" style="min-height:80px;font-size:13px;border:1px solid var(--paper-line);border-radius:8px;padding:8px;width:100%;box-sizing:border-box;">${esc(comment)}</textarea></div>
-            ${type==='free'?`<button class="btn btn-ghost btn-sm" id="act-ai-draft" style="margin-bottom:10px;border:1px solid var(--paper-line);">✨ AI 초안 생성</button>`:''}
+            ${type==='free'?`<button class="btn btn-ghost btn-sm" id="act-ai-draft" style="margin-bottom:10px;border:1px solid var(--paper-line);">✏️ 평가 작성 도우미</button>`:''}
             <button class="btn btn-primary btn-sm" id="act-modal-save">평가 저장</button>
           </div>
         </div>
@@ -2752,7 +2753,7 @@ AI를 참고 자료로 활용하는 것과 AI에게 생각을 위탁하는 것 �
             if(data.result){ document.getElementById('act-modal-comment').value = data.result; }
             else toast(data.error||'AI 평가 실패');
           } catch(err){ toast('AI 평가 요청 실패'); }
-          aiDraftBtn.disabled = false; aiDraftBtn.textContent = '✨ AI 초안 생성';
+          aiDraftBtn.disabled = false; aiDraftBtn.textContent = '✏️ 평가 작성 도우미';
         };
       }
 
