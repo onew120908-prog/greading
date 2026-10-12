@@ -2869,6 +2869,45 @@ AI를 참고 자료로 활용하는 것과 AI에게 생각을 위탁하는 것 �
         </div>
 
         <div class="setting-card">
+          <h3>⭐ 쌓다 별 현황</h3>
+          <div class="section-desc">22기·23기·24기 학생별 별 누적 개수예요.</div>
+          ${(()=>{
+            const grades = ['22기','23기','24기'];
+            const gradeStudents = grades.map(g => students.filter(s=>s.name.startsWith(g)).sort((a,b)=>a.name.localeCompare(b.name,'ko')));
+            const rows = grades.map((g,gi)=>{
+              const ss = gradeStudents[gi];
+              if(!ss.length) return '';
+              const header = `<tr style="background:var(--sage);"><td colspan="6" style="padding:6px 10px;font-weight:700;font-size:13px;border:1px solid var(--paper-line);">${g}</td></tr>
+              <tr style="background:var(--paper);font-size:12px;font-weight:700;">
+                <td style="padding:6px 10px;border:1px solid var(--paper-line);">이름</td>
+                <td style="padding:6px 8px;border:1px solid var(--paper-line);text-align:center;">🌟읽다</td>
+                <td style="padding:6px 8px;border:1px solid var(--paper-line);text-align:center;">💜잇다</td>
+                <td style="padding:6px 8px;border:1px solid var(--paper-line);text-align:center;">❤️짓다</td>
+                <td style="padding:6px 8px;border:1px solid var(--paper-line);text-align:center;">💚펼치다</td>
+                <td style="padding:6px 8px;border:1px solid var(--paper-line);text-align:center;font-weight:700;">합계</td>
+              </tr>`;
+              const dataRows = ss.map(s=>{
+                const daily = new Set(s.record.entries.filter(e=>e.type==='daily').map(e=>e.date)).size;
+                const book  = s.record.entries.filter(e=>e.type==='book').length;
+                const free  = s.record.entries.filter(e=>e.type==='free').length;
+                const ws    = Object.values(s.record.worksheets||{}).filter(w=>w.submittedAt).length;
+                const total = daily+book+free+ws;
+                return `<tr>
+                  <td style="padding:6px 10px;border:1px solid var(--paper-line);font-weight:600;">${esc(s.name.replace(/^\d+기/,''))}</td>
+                  <td style="padding:6px 8px;border:1px solid var(--paper-line);text-align:center;">${daily}</td>
+                  <td style="padding:6px 8px;border:1px solid var(--paper-line);text-align:center;">${book}</td>
+                  <td style="padding:6px 8px;border:1px solid var(--paper-line);text-align:center;">${free}</td>
+                  <td style="padding:6px 8px;border:1px solid var(--paper-line);text-align:center;">${ws}</td>
+                  <td style="padding:6px 8px;border:1px solid var(--paper-line);text-align:center;font-weight:700;color:var(--forest);">${total}</td>
+                </tr>`;
+              }).join('');
+              return header+dataRows;
+            }).join('');
+            return `<div style="overflow-x:auto;"><table style="border-collapse:collapse;width:100%;font-size:13px;">${rows}</table></div>`;
+          })()}
+        </div>
+
+        <div class="setting-card">
           <h3>학생 관리</h3>
           <div class="section-desc">등록된 학생 목록입니다. 삭제하면 해당 학생의 모든 기록이 함께 삭제됩니다.</div>
           <div id="s-students">
