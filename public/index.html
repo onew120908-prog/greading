@@ -2968,7 +2968,7 @@ AI를 참고 자료로 활용하는 것과 AI에게 생각을 위탁하는 것 �
                 const sortedDaily = [...sdata].sort((a,b)=>b.daily-a.daily);
                 const dailyScore = new Map();
                 sortedDaily.forEach((d,idx)=>{
-                  const pts = Math.max(20 - Math.floor(idx/3)*2, 0);
+                  const pts = Math.max(25 - Math.floor(idx/3)*2, 0);
                   dailyScore.set(d.s.name, pts);
                 });
                 const header = `<tr style="background:var(--sage);"><td colspan="7" style="padding:6px 10px;font-weight:700;font-size:13px;border:1px solid var(--paper-line);">${g}</td></tr>
@@ -2984,7 +2984,7 @@ AI를 참고 자료로 활용하는 것과 AI에게 생각을 위탁하는 것 �
                 const dataRows = sdata.map(({s, daily, book, free, ws})=>{
                   const total = daily+book+free+ws;
                   const dScore = dailyScore.get(s.name) || 0;
-                  const bScore = Math.max(10 - (3 - Math.min(book,3))*2, 0);
+                  const bScore = Math.max(15 - (3 - Math.min(book,3))*2, 0);
                   const fScore = Math.max(10 - (5 - Math.min(free,5))*2, 0);
                   const wScore = Math.max(20 - (wsMax - Math.min(ws,wsMax))*2, 0);
                   const scoreTotal = dScore+bScore+fScore+wScore;
