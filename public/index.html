@@ -2920,10 +2920,18 @@ AI를 참고 자료로 활용하는 것과 AI에게 생각을 위탁하는 것 �
           ${(()=>{
             const MID_CUT = '2026-10-15';
             const FIN_START = '2026-10-16';
+            // 중간고사 수동 보정값 (앱 외 기록 포함)
+            const MID_OVERRIDES = {
+              '23기조서휘': { daily: 29 },
+              '23기송지유': { daily: 19 },
+              '23기윤시은': { daily: 21, ws: 5 },
+              '23기장준':   { ws: 5 },
+              '23기조호윤': { ws: 5 },
+            };
             const grades = ['22기','23기','24기'];
             const gradeStudents = grades.map(g => students.filter(s=>s.name.startsWith(g)).sort((a,b)=>a.name.localeCompare(b.name,'ko')));
 
-            function makeTable(label, cutFn) {
+            function makeTable(label, cutFn, isMid=false) {
               const rows = grades.map((g,gi)=>{
                 const ss = gradeStudents[gi];
                 if(!ss.length) return '';
@@ -2937,10 +2945,11 @@ AI를 참고 자료로 활용하는 것과 AI에게 생각을 위탁하는 것 �
                   <td style="padding:6px 8px;border:1px solid var(--paper-line);text-align:center;font-weight:700;">합계</td>
                 </tr>`;
                 const dataRows = ss.map(s=>{
-                  const daily = s.record.entries.filter(e=>e.type==='daily' && cutFn(e.date)).length;
-                  const book  = s.record.entries.filter(e=>e.type==='book'  && cutFn(e.date)).length;
-                  const free  = s.record.entries.filter(e=>e.type==='free'  && cutFn(e.date)).length;
-                  const ws    = Object.values(s.record.worksheets||{}).filter(w=>w.submittedAt && cutFn(w.submittedAt.slice(0,10))).length;
+                  const ov = (isMid && MID_OVERRIDES[s.name]) || {};
+                  const daily = ov.daily !== undefined ? ov.daily : s.record.entries.filter(e=>e.type==='daily' && cutFn(e.date)).length;
+                  const book  = ov.book  !== undefined ? ov.book  : s.record.entries.filter(e=>e.type==='book'  && cutFn(e.date)).length;
+                  const free  = ov.free  !== undefined ? ov.free  : s.record.entries.filter(e=>e.type==='free'  && cutFn(e.date)).length;
+                  const ws    = ov.ws    !== undefined ? ov.ws    : Object.values(s.record.worksheets||{}).filter(w=>w.submittedAt && cutFn(w.submittedAt.slice(0,10))).length;
                   const total = daily+book+free+ws;
                   return `<tr>
                     <td style="padding:6px 10px;border:1px solid var(--paper-line);font-weight:600;">${esc(s.name.replace(/^\d+기/,''))}</td>
@@ -2957,8 +2966,8 @@ AI를 참고 자료로 활용하는 것과 AI에게 생각을 위탁하는 것 �
               <div style="overflow-x:auto;margin-bottom:16px;"><table style="border-collapse:collapse;width:100%;font-size:13px;">${rows}</table></div>`;
             }
 
-            return makeTable('📝 중간고사 (~ 2026-10-15)', d => d <= MID_CUT)
-                 + makeTable('📝 기말고사 (2026-10-16 ~)', d => d >= FIN_START);
+            return makeTable('📝 중간고사 (~ 2026-10-15)', d => d <= MID_CUT, true)
+                 + makeTable('📝 기말고사 (2026-10-16 ~)', d => d >= FIN_START, false);
           })()}
         </div>
 
