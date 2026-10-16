@@ -2937,10 +2937,41 @@ AI를 참고 자료로 활용하는 것과 AI에게 생각을 위탁하는 것 �
             const gradeStudents = grades.map(g => students.filter(s=>s.name.startsWith(g)).sort((a,b)=>a.name.localeCompare(b.name,'ko')));
 
             function makeTable(label, cutFn, isMid=false) {
+              // Compute all student data per grade for relative ranking of 읽다
+              const gradeData = grades.map((g,gi)=>{
+                const ss = gradeStudents[gi];
+                return ss.map(s=>{
+                  const ov = (isMid && MID_OVERRIDES[s.name]) || {};
+                  const daily = ov.daily !== undefined ? ov.daily : s.record.entries.filter(e=>e.type==='daily' && cutFn(e.date)).length;
+                  const book  = ov.book  !== undefined ? ov.book  : s.record.entries.filter(e=>e.type==='book'  && cutFn(e.date)).length;
+                  const free  = ov.free  !== undefined ? ov.free  : s.record.entries.filter(e=>e.type==='free'  && cutFn(e.date)).length;
+                  const ws    = ov.ws    !== undefined ? ov.ws    : Object.values(s.record.worksheets||{}).filter(w=>w.submittedAt && cutFn(w.submittedAt.slice(0,10))).length;
+                  return {s, daily, book, free, ws};
+                });
+              });
+              // Compute total worksheets per grade for 펼치다 max
+              const gradeWsMax = grades.map((g,gi)=>{
+                const ss = gradeStudents[gi];
+                if(!ss.length) return 0;
+                // Use the student with the most worksheets as proxy for total available
+                // Actually count distinct worksheet keys submitted by anyone in the grade
+                const allWsKeys = new Set();
+                ss.forEach(s=>Object.keys(s.record.worksheets||{}).forEach(k=>allWsKeys.add(k)));
+                return allWsKeys.size || 1;
+              });
               const rows = grades.map((g,gi)=>{
                 const ss = gradeStudents[gi];
                 if(!ss.length) return '';
-                const header = `<tr style="background:var(--sage);"><td colspan="6" style="padding:6px 10px;font-weight:700;font-size:13px;border:1px solid var(--paper-line);">${g}</td></tr>
+                const sdata = gradeData[gi];
+                const wsMax = gradeWsMax[gi];
+                // Relative rank for 읽다: sort descending, assign points by group of 3
+                const sortedDaily = [...sdata].sort((a,b)=>b.daily-a.daily);
+                const dailyScore = new Map();
+                sortedDaily.forEach((d,idx)=>{
+                  const pts = Math.max(20 - Math.floor(idx/3)*2, 0);
+                  dailyScore.set(d.s.name, pts);
+                });
+                const header = `<tr style="background:var(--sage);"><td colspan="7" style="padding:6px 10px;font-weight:700;font-size:13px;border:1px solid var(--paper-line);">${g}</td></tr>
                 <tr style="background:var(--paper);font-size:12px;font-weight:700;">
                   <td style="padding:6px 10px;border:1px solid var(--paper-line);">이름</td>
                   <td style="padding:6px 8px;border:1px solid var(--paper-line);text-align:center;">🌟읽다</td>
@@ -2948,21 +2979,23 @@ AI를 참고 자료로 활용하는 것과 AI에게 생각을 위탁하는 것 �
                   <td style="padding:6px 8px;border:1px solid var(--paper-line);text-align:center;">❤️짓다</td>
                   <td style="padding:6px 8px;border:1px solid var(--paper-line);text-align:center;">💚펼치다</td>
                   <td style="padding:6px 8px;border:1px solid var(--paper-line);text-align:center;font-weight:700;">합계</td>
+                  <td style="padding:6px 8px;border:1px solid var(--paper-line);text-align:center;font-weight:700;color:#c0392b;">점수</td>
                 </tr>`;
-                const dataRows = ss.map(s=>{
-                  const ov = (isMid && MID_OVERRIDES[s.name]) || {};
-                  const daily = ov.daily !== undefined ? ov.daily : s.record.entries.filter(e=>e.type==='daily' && cutFn(e.date)).length;
-                  const book  = ov.book  !== undefined ? ov.book  : s.record.entries.filter(e=>e.type==='book'  && cutFn(e.date)).length;
-                  const free  = ov.free  !== undefined ? ov.free  : s.record.entries.filter(e=>e.type==='free'  && cutFn(e.date)).length;
-                  const ws    = ov.ws    !== undefined ? ov.ws    : Object.values(s.record.worksheets||{}).filter(w=>w.submittedAt && cutFn(w.submittedAt.slice(0,10))).length;
+                const dataRows = sdata.map(({s, daily, book, free, ws})=>{
                   const total = daily+book+free+ws;
+                  const dScore = dailyScore.get(s.name) || 0;
+                  const bScore = Math.max(10 - (3 - Math.min(book,3))*2, 0);
+                  const fScore = Math.max(10 - (5 - Math.min(free,5))*2, 0);
+                  const wScore = Math.max(20 - (wsMax - Math.min(ws,wsMax))*2, 0);
+                  const scoreTotal = dScore+bScore+fScore+wScore;
                   return `<tr>
                     <td style="padding:6px 10px;border:1px solid var(--paper-line);font-weight:600;">${esc(s.name.replace(/^\d+기/,''))}</td>
-                    <td style="padding:6px 8px;border:1px solid var(--paper-line);text-align:center;">${daily}</td>
-                    <td style="padding:6px 8px;border:1px solid var(--paper-line);text-align:center;">${book}</td>
-                    <td style="padding:6px 8px;border:1px solid var(--paper-line);text-align:center;">${free}</td>
-                    <td style="padding:6px 8px;border:1px solid var(--paper-line);text-align:center;">${ws}</td>
+                    <td style="padding:6px 8px;border:1px solid var(--paper-line);text-align:center;">${daily}<br><span style="font-size:11px;color:#888;">${dScore}점</span></td>
+                    <td style="padding:6px 8px;border:1px solid var(--paper-line);text-align:center;">${book}<br><span style="font-size:11px;color:#888;">${bScore}점</span></td>
+                    <td style="padding:6px 8px;border:1px solid var(--paper-line);text-align:center;">${free}<br><span style="font-size:11px;color:#888;">${fScore}점</span></td>
+                    <td style="padding:6px 8px;border:1px solid var(--paper-line);text-align:center;">${ws}<br><span style="font-size:11px;color:#888;">${wScore}점</span></td>
                     <td style="padding:6px 8px;border:1px solid var(--paper-line);text-align:center;font-weight:700;color:var(--forest);">${total}</td>
+                    <td style="padding:6px 8px;border:1px solid var(--paper-line);text-align:center;font-weight:700;color:#c0392b;">${scoreTotal}점</td>
                   </tr>`;
                 }).join('');
                 return header+dataRows;
