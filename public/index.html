@@ -3004,15 +3004,14 @@ AI를 참고 자료로 활용하는 것과 AI에게 생각을 위탁하는 것 �
                   return {s, daily, book, free, ws};
                 });
               });
-              // Compute total worksheets per grade for 펼치다 max (기간 내 제출분만)
+              // 펼치다 max: 기간 내 가장 많이 제출한 학생의 제출 수
               const gradeWsMax = grades.map((g,gi)=>{
                 const ss = gradeStudents[gi];
-                if(!ss.length) return 0;
-                const allWsKeys = new Set();
-                ss.forEach(s=>Object.entries(s.record.worksheets||{})
-                  .filter(([,w])=>w.submittedAt && cutFn(w.submittedAt.slice(0,10)))
-                  .forEach(([k])=>allWsKeys.add(k)));
-                return allWsKeys.size || 1;
+                if(!ss.length) return 1;
+                return Math.max(1, ...ss.map(s=>
+                  Object.values(s.record.worksheets||{})
+                    .filter(w=>w.submittedAt && cutFn(w.submittedAt.slice(0,10))).length
+                ));
               });
               const rows = grades.map((g,gi)=>{
                 const ss = gradeStudents[gi];
