@@ -1647,6 +1647,7 @@ AI를 참고 자료로 활용하는 것과 AI에게 생각을 위탁하는 것 �
       id: 'odyssey-activity-1',
       title: '오디세이아 · 특별 활동 — 올림포스 TV 뉴스 특보',
       grades: ['22기', '23기'],
+      deadlines: { '22기': '2026-10-21', '23기': '2026-10-16' },
       sections: [
         { type: 'provided', label: '📌 활동 안내', content: `여러분은 그리스 최고 방송국 올림포스 TV 기자입니다.\n오디세우스 여행 중 가장 충격적인 사건을 골라 뉴스 특보 대본을 작성하고 발표해 보세요.\n\n【사건 선택】 모둠별로 하나를 골라요.\n· 키클롭스 섬 탈출 사건 — "오디세우스, 이름을 밝히는 치명적 실수?"\n· 헬리오스 가축 도난 사건 — "부하들의 금단의 선택, 그 결말은?"\n· 세이렌의 유혹 — "귀를 막은 선원들, 오직 선장만 들었다?"\n· 스킬라 vs 카리브디스 — "둘 중 하나를 선택해야 했던 오디세우스"\n· 하이데스 방문 — "살아있는 인간이 죽은 자들의 나라에 다녀왔다"\n\n【대본 구성】\n· 앵커: 사건 개요 전달 (30초 분량)\n· 현장 기자: 현장 상황 묘사 (30초 분량)\n· 목격자 인터뷰: 등장인물 1명 이상 (각 20초 분량)\n· 앵커 마무리: 사건의 의미 또는 교훈 한 줄` },
         { type: 'write', label: '📺 선택한 사건과 모둠 역할 분담', placeholder: '선택한 사건:\n\n역할 분담\n· 앵커:\n· 현장 기자:\n· 목격자(인물 이름/담당자):' },
@@ -3071,37 +3072,44 @@ AI를 참고 자료로 활용하는 것과 AI에게 생각을 위탁하는 것 �
         <div class="setting-card">
           <h3>📅 펼치다 기한 현황</h3>
           ${(()=>{
-            const deadlineWs = (allWorksheets||[]).filter(w=>w.deadline);
+            const deadlineWs = (allWorksheets||[]).filter(w=>w.deadline||w.deadlines);
             if(!deadlineWs.length) return '<div style="color:#888;font-size:13px;">기한이 설정된 활동지가 없습니다.</div>';
             return deadlineWs.map(ws=>{
-              const gradeSet = new Set(ws.grades||[]);
-              const targetStudents = students.filter(s=>(ws.grades||[]).some(g=>s.name.startsWith(g)));
-              if(!targetStudents.length) return '';
-              const rows = targetStudents.map(s=>{
-                const sub = (s.record.worksheets||{})[ws.id];
-                let status, color;
-                if(!sub || !sub.submittedAt){
-                  status='미제출'; color='#aaa';
-                } else {
-                  const subDate = sub.submittedAt.slice(0,10);
-                  if(subDate <= ws.deadline){ status='✅ 기한 내'; color='#27ae60'; }
-                  else { status=`⚠️ 기한 후 (${subDate})`; color='#e67e22'; }
-                }
-                return `<tr>
-                  <td style="padding:5px 10px;border:1px solid var(--paper-line);font-weight:600;">${esc(s.name.replace(/^\d+기/,''))}</td>
-                  <td style="padding:5px 8px;border:1px solid var(--paper-line);color:${color};">${status}</td>
-                </tr>`;
-              }).join('');
-              return `<div style="font-size:13px;font-weight:700;margin:14px 0 6px;">${esc(ws.title)}<span style="font-weight:400;color:#888;margin-left:8px;">기한: ${ws.deadline}</span></div>
-              <div style="overflow-x:auto;margin-bottom:16px;">
-                <table style="border-collapse:collapse;font-size:13px;">
+              const gradesWithDeadline = (ws.grades||[]).filter(g=>
+                (ws.deadlines && ws.deadlines[g]) || ws.deadline
+              );
+              if(!gradesWithDeadline.length) return '';
+              // 기수별로 섹션 분리
+              const sections = gradesWithDeadline.map(g=>{
+                const dl = (ws.deadlines && ws.deadlines[g]) || ws.deadline;
+                const gStudents = students.filter(s=>s.name.startsWith(g));
+                if(!gStudents.length) return '';
+                const rows = gStudents.map(s=>{
+                  const sub = (s.record.worksheets||{})[ws.id];
+                  let status, color;
+                  if(!sub || !sub.submittedAt){
+                    status='미제출'; color='#aaa';
+                  } else {
+                    const subDate = sub.submittedAt.slice(0,10);
+                    if(subDate <= dl){ status='✅ 기한 내'; color='#27ae60'; }
+                    else { status=`⚠️ 기한 후 (${subDate})`; color='#e67e22'; }
+                  }
+                  return `<tr>
+                    <td style="padding:5px 10px;border:1px solid var(--paper-line);font-weight:600;">${esc(s.name.replace(/^\d+기/,''))}</td>
+                    <td style="padding:5px 8px;border:1px solid var(--paper-line);color:${color};">${status}</td>
+                  </tr>`;
+                }).join('');
+                return `<div style="font-size:12px;font-weight:700;color:var(--ink-soft);margin:8px 0 4px;">${g} · 기한: ${dl}</div>
+                <table style="border-collapse:collapse;font-size:13px;margin-bottom:10px;">
                   <tr style="background:var(--paper);font-size:12px;font-weight:700;">
                     <td style="padding:5px 10px;border:1px solid var(--paper-line);">이름</td>
                     <td style="padding:5px 8px;border:1px solid var(--paper-line);">제출 상태</td>
                   </tr>
                   ${rows}
-                </table>
-              </div>`;
+                </table>`;
+              }).join('');
+              return `<div style="font-size:13px;font-weight:700;margin:14px 0 4px;">${esc(ws.title)}</div>
+              <div style="overflow-x:auto;margin-bottom:12px;">${sections}</div>`;
             }).join('');
           })()}
         </div>
