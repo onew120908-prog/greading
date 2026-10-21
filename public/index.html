@@ -506,6 +506,28 @@ const db = firebase.firestore();
 
   function uid(){ return Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
   function todayStr(){ return new Date().toISOString().slice(0,10); }
+
+  // ── 임시저장(draft) 헬퍼 ──
+  const DRAFT_PREFIX = 'greading_draft_';
+  function draftKey(tab, sub){ return DRAFT_PREFIX + (state.studentName||'') + '_' + tab + (sub ? '_' + sub : ''); }
+  function saveDraft(tab, sub, data){
+    try { localStorage.setItem(draftKey(tab, sub), JSON.stringify(data)); } catch(e){}
+  }
+  function loadDraft(tab, sub){
+    try { const v = localStorage.getItem(draftKey(tab, sub)); return v ? JSON.parse(v) : null; } catch(e){ return null; }
+  }
+  function clearDraft(tab, sub){
+    try { localStorage.removeItem(draftKey(tab, sub)); } catch(e){}
+  }
+  let _draftTimers = {};
+  function scheduleDraft(tab, sub, getFn){
+    const k = tab + '_' + (sub||'');
+    clearTimeout(_draftTimers[k]);
+    _draftTimers[k] = setTimeout(()=>{ saveDraft(tab, sub, getFn()); }, 600);
+  }
+  function draftBanner(text){
+    return `<div id="draft-banner" style="background:#FFF8E7;border:1px solid #F0C040;border-radius:8px;padding:8px 14px;margin-bottom:10px;font-size:12px;color:#7A5F00;display:flex;align-items:center;gap:8px;">✏️ ${text} <button id="draft-clear" style="margin-left:auto;background:none;border:none;font-size:11px;color:#9a7000;text-decoration:underline;cursor:pointer;">지우기</button></div>`;
+  }
   function fmtDate(s){
     if(!s) return '';
     const d = new Date(s + (s.length===10?'T00:00:00':''));
@@ -1019,14 +1041,16 @@ const db = firebase.firestore();
 
   function renderDailyTab(panel){
     const todays = state.record.entries.filter(e=>e.type==='daily').sort((a,b)=> b.createdAt-a.createdAt);
+    const dDraft = loadDraft('daily', null);
     panel.innerHTML = `
       <div class="section-title serif">${esc(sectionLabel('daily'))} · 오늘의 독서기록</div>
       <div class="section-desc">오늘 읽은 책과 짧은 생각을 남겨 보세요. 매일 조금씩 쌓이면 훌륭한 기록이 돼요.</div>
+      ${dDraft ? draftBanner('저장하지 않은 내용이 있어요. 이어서 쓸 수 있어요.') : ''}
       <div class="row2">
-        <div class="field"><label>책 제목</label><input id="d-title" placeholder="예: 나니아 연대기"/></div>
-        <div class="field"><label>오늘 읽은 범위</label><input id="d-pages" placeholder="예: 45~68쪽"/></div>
+        <div class="field"><label>책 제목</label><input id="d-title" placeholder="예: 나니아 연대기" value="${esc(dDraft?.title||'')}"/></div>
+        <div class="field"><label>오늘 읽은 범위</label><input id="d-pages" placeholder="예: 45~68쪽" value="${esc(dDraft?.pages||'')}"/></div>
       </div>
-      <div class="field"><label>오늘의 한 줄 생각</label><textarea id="d-note" placeholder="가장 인상 깊었던 장면이나 느낀 점을 자유롭게 써 보세요."></textarea></div>
+      <div class="field"><label>오늘의 한 줄 생각</label><textarea id="d-note" placeholder="가장 인상 깊었던 장면이나 느낀 점을 자유롭게 써 보세요.">${esc(dDraft?.note||'')}</textarea></div>
       ${pwFieldHtml('🔒 비밀번호 설정')}
       <button class="btn btn-primary" id="d-save">오늘 기록 저장</button>
       <div class="divider"></div>
@@ -1077,6 +1101,11 @@ const db = firebase.firestore();
         };
       };
     });
+    // 읽다 임시저장
+    const dDraftInputs = ()=>({ title: document.getElementById('d-title')?.value||'', pages: document.getElementById('d-pages')?.value||'', note: document.getElementById('d-note')?.value||'' });
+    ['d-title','d-pages','d-note'].forEach(id=>{ const el=document.getElementById(id); if(el) el.addEventListener('input',()=>scheduleDraft('daily',null,dDraftInputs)); });
+    panel.querySelector('#draft-clear')?.addEventListener('click',()=>{ clearDraft('daily',null); renderDailyTab(panel); });
+
     document.getElementById('d-save').onclick = async () => {
       if(saving) return;
       const btn = document.getElementById('d-save');
@@ -1094,7 +1123,7 @@ const db = firebase.firestore();
       state.record.entries.push(entry);
       const ok = await saveRecord(state.studentName, state.record);
       saving = false;
-      if(ok){ btnDone(btn); toast(pw ? '비밀 기록을 저장했어요. 🔒' : '오늘의 기록을 저장했어요.'); setTimeout(()=>render(), 1200); }
+      if(ok){ clearDraft('daily',null); btnDone(btn); toast(pw ? '비밀 기록을 저장했어요. 🔒' : '오늘의 기록을 저장했어요.'); setTimeout(()=>render(), 1200); }
       else { btnReset(btn); state.record.entries.pop(); }
     };
   }
@@ -1113,20 +1142,22 @@ const db = firebase.firestore();
 
   function renderBookTab(panel){
     const books = state.record.entries.filter(e=>e.type==='book').sort((a,b)=> b.createdAt-a.createdAt);
+    const bDraft = loadDraft('book', null);
     panel.innerHTML = `
       <div class="section-title serif">${esc(sectionLabel('book'))} · 완독 기록장</div>
       <div class="section-desc">책을 다 읽었다면 이곳에 정리해 보세요.</div>
+      ${bDraft ? draftBanner('저장하지 않은 내용이 있어요. 이어서 쓸 수 있어요.') : ''}
       <div class="row2">
-        <div class="field"><label>책 제목</label><input id="b-title" placeholder="예: 오디세이아"/></div>
-        <div class="field"><label>지은이</label><input id="b-author" placeholder="예: 호메로스"/></div>
+        <div class="field"><label>책 제목</label><input id="b-title" placeholder="예: 오디세이아" value="${esc(bDraft?.title||'')}"/></div>
+        <div class="field"><label>지은이</label><input id="b-author" placeholder="예: 호메로스" value="${esc(bDraft?.author||'')}"/></div>
       </div>
       <div class="row2">
-        <div class="field"><label>읽기 시작한 날</label><input id="b-start" type="date"/></div>
-        <div class="field"><label>다 읽은 날</label><input id="b-end" type="date" value="${todayStr()}"/></div>
+        <div class="field"><label>읽기 시작한 날</label><input id="b-start" type="date" value="${esc(bDraft?.start||'')}"/></div>
+        <div class="field"><label>다 읽은 날</label><input id="b-end" type="date" value="${esc(bDraft?.end||todayStr())}"/></div>
       </div>
-      <div class="field"><label>별점</label><div class="star-picker" id="b-stars">${[1,2,3,4,5].map(n=>`<span data-n="${n}">★</span>`).join('')}</div></div>
-      <div class="field"><label>기억나는 문장</label><textarea id="b-quote" placeholder="책에서 가장 마음에 남은 문장을 그대로 옮겨 적어 보세요." style="min-height:60px;"></textarea></div>
-      <div class="field"><label>전체 감상 <span id="b-charcount" style="font-weight:400;color:var(--ink-soft);"></span></label><textarea id="b-review" placeholder="어떤 이야기였는지, 무엇을 느꼈는지 자유롭게 써 보세요." style="min-height:120px;"></textarea></div>
+      <div class="field"><label>별점</label><div class="star-picker" id="b-stars">${[1,2,3,4,5].map(n=>`<span data-n="${n}" style="color:${n<=(bDraft?.rating||0)?'var(--gold)':''}">★</span>`).join('')}</div></div>
+      <div class="field"><label>기억나는 문장</label><textarea id="b-quote" placeholder="책에서 가장 마음에 남은 문장을 그대로 옮겨 적어 보세요." style="min-height:60px;">${esc(bDraft?.quote||'')}</textarea></div>
+      <div class="field"><label>전체 감상 <span id="b-charcount" style="font-weight:400;color:var(--ink-soft);"></span></label><textarea id="b-review" placeholder="어떤 이야기였는지, 무엇을 느꼈는지 자유롭게 써 보세요." style="min-height:120px;">${esc(bDraft?.review||'')}</textarea></div>
       ${pwFieldHtml('🔒 비밀번호 설정')}
       <button class="btn btn-primary" id="b-save">완독 기록 저장</button>
       <div class="divider"></div>
@@ -1203,11 +1234,22 @@ const db = firebase.firestore();
       bReview.addEventListener('input', updateCount);
       updateCount();
     }
-    let rating = 0;
+    let rating = bDraft?.rating || 0;
     const stars = panel.querySelectorAll('#b-stars span');
     stars.forEach(s=>{
-      s.onclick = () => { rating = parseInt(s.dataset.n); stars.forEach(x=>x.classList.toggle('on', parseInt(x.dataset.n)<=rating)); };
+      s.style.cursor = 'pointer';
+      s.style.color = parseInt(s.dataset.n) <= rating ? 'var(--gold)' : '';
+      s.onclick = () => {
+        rating = parseInt(s.dataset.n);
+        stars.forEach(x=>{ x.classList.toggle('on', parseInt(x.dataset.n)<=rating); x.style.color = parseInt(x.dataset.n)<=rating?'var(--gold)':''; });
+        scheduleDraft('book', null, bDraftInputs);
+      };
     });
+    // 잇다 임시저장
+    const bDraftInputs = ()=>({ title: document.getElementById('b-title')?.value||'', author: document.getElementById('b-author')?.value||'', start: document.getElementById('b-start')?.value||'', end: document.getElementById('b-end')?.value||'', quote: document.getElementById('b-quote')?.value||'', review: document.getElementById('b-review')?.value||'', rating });
+    ['b-title','b-author','b-start','b-end','b-quote','b-review'].forEach(id=>{ const el=document.getElementById(id); if(el) el.addEventListener('input',()=>scheduleDraft('book',null,bDraftInputs)); });
+    panel.querySelector('#draft-clear')?.addEventListener('click',()=>{ clearDraft('book',null); renderBookTab(panel); });
+
     document.getElementById('b-save').onclick = async () => {
       if(saving) return;
       const btn = document.getElementById('b-save');
@@ -1229,7 +1271,7 @@ const db = firebase.firestore();
       state.record.entries.push(entry);
       const ok = await saveRecord(state.studentName, state.record);
       saving = false;
-      if(ok){ btnDone(btn); toast(pw ? '비밀 완독 기록을 저장했어요. 🔒' : '완독 기록을 저장했어요.'); setTimeout(()=>render(), 1200); }
+      if(ok){ clearDraft('book',null); btnDone(btn); toast(pw ? '비밀 완독 기록을 저장했어요. 🔒' : '완독 기록을 저장했어요.'); setTimeout(()=>render(), 1200); }
       else { btnReset(btn); state.record.entries.pop(); }
     };
   }
@@ -1416,6 +1458,30 @@ AI를 참고 자료로 활용하는 것과 AI에게 생각을 위탁하는 것 �
       bindCount(sfx+'a');
       if(is23 && topic.article2) bindCount(sfx+'b');
 
+      // 짓다 임시저장 바인딩
+      const bindFreeDraft = (sfxId, weekKey) => {
+        const getD = ()=>({ title: document.getElementById(`ft-${sfxId}`)?.value||'', content: document.getElementById(`fv-${sfxId}`)?.value||'' });
+        const fDraft = loadDraft('free', weekKey);
+        if(fDraft){
+          const tEl = document.getElementById(`ft-${sfxId}`);
+          const vEl = document.getElementById(`fv-${sfxId}`);
+          if(tEl && !tEl.value) tEl.value = fDraft.title || '';
+          if(vEl && !vEl.value) vEl.value = fDraft.content || '';
+          // 배너 삽입
+          const card = tEl?.closest('.ws-card, div') || panel.querySelector(`#fs-${sfxId}`)?.closest('div');
+          const existBanner = panel.querySelector(`#draft-banner-${sfxId}`);
+          if(!existBanner && (fDraft.title||fDraft.content)){
+            const bn = document.createElement('div');
+            bn.id = `draft-banner-${sfxId}`;
+            bn.style.cssText = 'background:#FFF8E7;border:1px solid #F0C040;border-radius:8px;padding:8px 14px;margin-bottom:10px;font-size:12px;color:#7A5F00;display:flex;align-items:center;gap:8px;';
+            bn.innerHTML = `✏️ 저장하지 않은 내용이 있어요. <button style="margin-left:auto;background:none;border:none;font-size:11px;color:#9a7000;text-decoration:underline;cursor:pointer;">지우기</button>`;
+            bn.querySelector('button').onclick = ()=>{ clearDraft('free',weekKey); bn.remove(); if(tEl) tEl.value=''; if(vEl) vEl.value=''; };
+            tEl?.closest('.ws-section')?.before(bn) || tEl?.parentElement?.before(bn);
+          }
+        }
+        [document.getElementById(`ft-${sfxId}`), document.getElementById(`fv-${sfxId}`)].forEach(el=>{ if(el) el.addEventListener('input',()=>scheduleDraft('free',weekKey,getD)); });
+      };
+
       // 저장 버튼
       const bindSave = (sfxId, weekKey, curEntry) => {
         const btn = document.getElementById(`fs-${sfxId}`);
@@ -1444,10 +1510,12 @@ AI를 참고 자료로 활용하는 것과 AI에게 생각을 위탁하는 것 �
           }
           const ok=await saveRecord(state.studentName,freshRec);
           saving=false;
-          if(ok){ btnDone(btn); toast(pw?'비밀 글을 저장했어요. 🔒':'글을 저장했어요.'); setTimeout(()=>render(),1200); }
+          if(ok){ clearDraft('free',weekKey); btnDone(btn); toast(pw?'비밀 글을 저장했어요. 🔒':'글을 저장했어요.'); setTimeout(()=>render(),1200); }
           else btnReset(btn);
         };
       };
+      if(!entry) bindFreeDraft(sfx+'a', wk);
+      if(is23 && topic.article2 && !entry2) bindFreeDraft(sfx+'b', wk+'-2');
       bindSave(sfx+'a', wk, entry);
       if(is23 && topic.article2) bindSave(sfx+'b', wk+'-2', entry2);
     });
@@ -2443,6 +2511,45 @@ AI를 참고 자료로 활용하는 것과 AI에게 생각을 위탁하는 것 �
 
     panel.innerHTML = html;
 
+    // 펼치다 임시저장 복원 및 바인딩
+    mine.forEach(ws=>{
+      if((wsAnswers[ws.id]||{}).submittedAt) return; // 이미 제출된 것은 건너뜀
+      const card = panel.querySelector(`.ws-card[data-wsid="${ws.id}"]`);
+      if(!card) return;
+      const pDraft = loadDraft('pelchi', ws.id);
+      const getWsDraft = ()=>{
+        const d = {};
+        ws.sections.forEach((sec,si)=>{
+          if(sec.type==='write'){ const ta=card.querySelector(`.ws-textarea[data-sid="${si}"]`); if(ta) d[`s${si}`]=ta.value; }
+          if(sec.type==='questions'){ sec.questions.forEach((_,qi)=>{ const ta=card.querySelector(`.ws-textarea[data-sid="${si}"][data-qid="${qi}"]`); if(ta) d[`s${si}_q${qi}`]=ta.value; }); }
+        });
+        return d;
+      };
+      // draft 복원
+      if(pDraft){
+        Object.entries(pDraft).forEach(([k,v])=>{
+          const parts = k.match(/^s(\d+)(?:_q(\d+))?$/);
+          if(!parts) return;
+          const si = parts[1], qi = parts[2];
+          const sel = qi!=null ? `.ws-textarea[data-sid="${si}"][data-qid="${qi}"]` : `.ws-textarea[data-sid="${si}"]:not([data-qid])`;
+          const ta = card.querySelector(sel);
+          if(ta && !ta.value) ta.value = v;
+        });
+        // 배너 삽입
+        const body = card.querySelector('.ws-body');
+        if(body && !card.querySelector('.ws-draft-banner')){
+          const bn = document.createElement('div');
+          bn.className = 'ws-draft-banner';
+          bn.style.cssText = 'background:#FFF8E7;border:1px solid #F0C040;border-radius:8px;padding:8px 14px;margin-bottom:10px;font-size:12px;color:#7A5F00;display:flex;align-items:center;gap:8px;';
+          bn.innerHTML = `✏️ 저장하지 않은 내용이 있어요. <button style="margin-left:auto;background:none;border:none;font-size:11px;color:#9a7000;text-decoration:underline;cursor:pointer;">지우기</button>`;
+          bn.querySelector('button').onclick = ()=>{ clearDraft('pelchi',ws.id); bn.remove(); card.querySelectorAll('.ws-textarea').forEach(ta=>{ ta.value=''; }); };
+          body.prepend(bn);
+        }
+      }
+      // 자동저장 이벤트
+      card.querySelectorAll('.ws-textarea').forEach(ta=>{ ta.addEventListener('input',()=>scheduleDraft('pelchi',ws.id,getWsDraft)); });
+    });
+
     panel.querySelectorAll('.ws-submit').forEach(btn=>{
       btn.onclick = async ()=>{
         const wsId = btn.dataset.wsid;
@@ -2465,7 +2572,7 @@ AI를 참고 자료로 활용하는 것과 AI에게 생각을 위탁하는 것 �
         if(!state.record.worksheets) state.record.worksheets = {};
         state.record.worksheets[wsId] = save;
         const ok = await saveRecord(state.studentName, state.record);
-        if(ok){ toast('활동지를 제출했어요!'); renderPelchiTab(panel); }
+        if(ok){ clearDraft('pelchi', wsId); toast('활동지를 제출했어요!'); renderPelchiTab(panel); }
       };
     });
 
