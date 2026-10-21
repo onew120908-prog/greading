@@ -1046,6 +1046,7 @@ const db = firebase.firestore();
         const id = btn.dataset.id;
         const entry = state.record.entries.find(e=>e.id===id);
         if(!entry) return;
+        if(entry.date !== todayStr()){ toast('읽다 기록은 작성 당일만 수정할 수 있어요.'); return; }
         const card = panel.querySelector(`.entry[data-id="${id}"]`);
         card.querySelector('.entry-body')?.remove();
         card.querySelector('.rev-toggle')?.remove();
@@ -1069,7 +1070,7 @@ const db = firebase.firestore();
           if(!newNote){ toast('내용을 입력해 주세요.'); return; }
           if(!entry.revisions) entry.revisions = [];
           entry.revisions.push({ note: entry.note, pagesRead: entry.pagesRead, date: entry.date, at: Date.now() });
-          entry.pagesRead = newPages; entry.note = newNote; entry.date = todayStr();
+          entry.pagesRead = newPages; entry.note = newNote;
           const ok = await saveRecord(state.studentName, state.record);
           if(ok){ toast('기록을 수정했어요.'); renderDailyTab(panel); }
           else { entry.revisions.pop(); toast('저장에 실패했어요.'); }
