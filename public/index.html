@@ -2474,6 +2474,15 @@ AI를 참고 자료로 활용하는 것과 AI에게 생각을 위탁하는 것 �
     catch(e){ toast('저장 실패: ' + e.message); return false; }
   }
 
+  async function loadExamples(){
+    try { const doc = await db.collection('meta').doc('examples').get(); return (doc.exists && doc.data()) ? doc.data() : {}; }
+    catch(e){ return {}; }
+  }
+  async function saveExamples(data){
+    try { await db.collection('meta').doc('examples').set(data); return true; }
+    catch(e){ toast('저장 실패: ' + e.message); return false; }
+  }
+
   async function renderPelchiTab(panel){
     const grade = studentGrade();
     const all = await loadWorksheets();
@@ -2812,6 +2821,7 @@ AI를 참고 자료로 활용하는 것과 AI에게 생각을 위탁하는 것 �
   async function renderTeacherPelchi(){
     const students = state.teacherStudents || [];
     const allWs = await loadWorksheets();
+    const allExamples = await loadExamples();
     const gradeOrder = name => { const m=name.match(/^(\d+)기/); return m?parseInt(m[1]):99; };
     const sortStudents = arr => [...arr].sort((a,b)=>{
       const ga=gradeOrder(a.name), gb=gradeOrder(b.name);
@@ -2951,10 +2961,16 @@ AI를 참고 자료로 활용하는 것과 AI에게 생각을 위탁하는 것 �
         const ans=(s.record.worksheets||{})[ws.id]||{};
         score=ans.score||0; comment=ans.teacherComment||'';
         title=`${esc(s.name)} · ${esc(ws.title)}`; dateStr=`제출일: ${ans.submittedAt?fmtDateTime(ans.submittedAt):'-'}`;
+        const wsEx = allExamples[ws.id] || {};
         bodyHtml=ws.sections.map((sec,si)=>{
           if(sec.type==='provided') return `<div style="margin-bottom:12px;"><b style="font-size:12px;color:var(--forest);">${esc(sec.label)}</b><div style="background:var(--sage);padding:10px;border-radius:8px;font-size:12.5px;line-height:1.7;white-space:pre-wrap;margin-top:4px;">${esc(sec.content)}</div></div>`;
-          if(sec.type==='write'){ const v=ans[`s${si}`]||''; return `<div style="margin-bottom:12px;"><b style="font-size:12px;color:var(--forest);">${esc(sec.label)}</b><div style="background:#fafafa;border:1px solid var(--paper-line);border-radius:8px;padding:10px;font-size:13px;line-height:1.7;white-space:pre-wrap;margin-top:4px;">${esc(v)||'<span style="color:var(--ink-soft)">(미작성)</span>'}</div></div>`; }
-          if(sec.type==='questions') return `<div style="margin-bottom:12px;"><b style="font-size:12px;color:var(--forest);">${esc(sec.label)}</b>${sec.questions.map((q,qi)=>{ const v=ans[`s${si}_q${qi}`]||''; return `<div style="margin-top:8px;"><div style="font-size:12.5px;font-weight:600;margin-bottom:3px;">${esc(q)}</div><div style="background:#fafafa;border:1px solid var(--paper-line);border-radius:8px;padding:8px 10px;font-size:13px;line-height:1.65;white-space:pre-wrap;">${esc(v)||'<span style="color:var(--ink-soft)">(미작성)</span>'}</div></div>`; }).join('')}</div>`;
+          const exBlock = (key) => {
+            const ex = wsEx[key];
+            if(!ex) return '';
+            return `<details style="margin-top:6px;"><summary style="font-size:11px;color:#7B5EA7;cursor:pointer;font-weight:600;">📋 예시 답안 보기</summary><div style="background:#F3F0FF;border:1px solid #C4B5E8;border-radius:8px;padding:8px 10px;font-size:12.5px;line-height:1.7;white-space:pre-wrap;margin-top:4px;color:#3D2B6B;">${esc(ex)}</div></details>`;
+          };
+          if(sec.type==='write'){ const v=ans[`s${si}`]||''; return `<div style="margin-bottom:12px;"><b style="font-size:12px;color:var(--forest);">${esc(sec.label)}</b><div style="background:#fafafa;border:1px solid var(--paper-line);border-radius:8px;padding:10px;font-size:13px;line-height:1.7;white-space:pre-wrap;margin-top:4px;">${esc(v)||'<span style="color:var(--ink-soft)">(미작성)</span>'}</div>${exBlock(`s${si}`)}</div>`; }
+          if(sec.type==='questions') return `<div style="margin-bottom:12px;"><b style="font-size:12px;color:var(--forest);">${esc(sec.label)}</b>${sec.questions.map((q,qi)=>{ const v=ans[`s${si}_q${qi}`]||''; return `<div style="margin-top:8px;"><div style="font-size:12.5px;font-weight:600;margin-bottom:3px;">${esc(q)}</div><div style="background:#fafafa;border:1px solid var(--paper-line);border-radius:8px;padding:8px 10px;font-size:13px;line-height:1.65;white-space:pre-wrap;">${esc(v)||'<span style="color:var(--ink-soft)">(미작성)</span>'}</div>${exBlock(`s${si}_q${qi}`)}</div>`; }).join('')}</div>`;
           return '';
         }).join('');
       } else if(type==='book'){
@@ -3079,6 +3095,7 @@ AI를 참고 자료로 활용하는 것과 AI에게 생각을 위탁하는 것 �
     const c = cfg();
     const students = state.teacherStudents || [];
     const allWorksheets = await loadWorksheets();
+    const allExamples = await loadExamples();
     shell.innerHTML = `
       ${teacherTopbar()}
       <div class="container">
@@ -3163,6 +3180,20 @@ AI를 참고 자료로 활용하는 것과 AI에게 생각을 위탁하는 것 �
                 <button class="btn btn-ghost btn-sm ws-del" data-id="${esc(w.id)}" style="color:var(--clay);white-space:nowrap;">삭제</button>
               </div>`).join('') : `<div style="color:var(--ink-soft);font-size:13px;padding:6px 0;">등록된 활동지가 없어요.</div>`}
           </div>
+        </div>
+
+        <div class="setting-card" id="examples-card">
+          <h3>📖 예시 답안 관리</h3>
+          <div class="section-desc">활동지별 예시 답안을 입력하세요. 관리자 피드백 모달에서만 확인할 수 있어요.</div>
+          <div class="field" style="margin-bottom:10px;">
+            <label>활동지 선택</label>
+            <select id="ex-ws-select" style="width:100%;border:1px solid var(--paper-line);border-radius:8px;padding:8px 10px;font-size:13.5px;font-family:'Noto Sans KR',sans-serif;background:var(--card);">
+              <option value="">-- 활동지를 선택하세요 --</option>
+              ${allWorksheets.map(w=>`<option value="${esc(w.id)}">${esc(w.title)}</option>`).join('')}
+            </select>
+          </div>
+          <div id="ex-sections-wrap"></div>
+          <button class="btn btn-primary btn-sm" id="ex-save" style="display:none;margin-top:10px;">예시 답안 저장</button>
         </div>
 
         <div class="setting-card">
@@ -3489,6 +3520,44 @@ AI를 참고 자료로 활용하는 것과 AI에게 생각을 위탁하는 것 �
         if(ok){ toast('활동지를 삭제했어요.'); renderTeacherSettings(); }
       };
     });
+
+    // 예시 답안 관리
+    const exSelect = document.getElementById('ex-ws-select');
+    const exWrap = document.getElementById('ex-sections-wrap');
+    const exSaveBtn = document.getElementById('ex-save');
+    function renderExSections(wsId){
+      const ws = allWorksheets.find(w=>w.id===wsId);
+      if(!ws){ exWrap.innerHTML=''; exSaveBtn.style.display='none'; return; }
+      const saved = allExamples[wsId] || {};
+      let html = '';
+      ws.sections.forEach((sec,si)=>{
+        if(sec.type==='write'){
+          html += `<div class="field" style="margin-bottom:10px;">
+            <label style="font-size:12px;color:var(--forest);">예시 — ${esc(sec.label)}</label>
+            <textarea class="ex-ta" data-key="s${si}" style="width:100%;min-height:80px;font-size:13px;border:1px solid var(--paper-line);border-radius:8px;padding:8px;box-sizing:border-box;">${esc(saved[`s${si}`]||'')}</textarea>
+          </div>`;
+        }
+        if(sec.type==='questions'){
+          sec.questions.forEach((q,qi)=>{
+            html += `<div class="field" style="margin-bottom:10px;">
+              <label style="font-size:12px;color:var(--forest);">예시 — ${esc(q.slice(0,40))}${q.length>40?'…':''}</label>
+              <textarea class="ex-ta" data-key="s${si}_q${qi}" style="width:100%;min-height:60px;font-size:13px;border:1px solid var(--paper-line);border-radius:8px;padding:8px;box-sizing:border-box;">${esc(saved[`s${si}_q${qi}`]||'')}</textarea>
+            </div>`;
+          });
+        }
+      });
+      exWrap.innerHTML = html || `<div style="color:var(--ink-soft);font-size:13px;padding:4px 0;">작성 가능한 섹션이 없어요.</div>`;
+      exSaveBtn.style.display = html ? 'inline-block' : 'none';
+    }
+    exSelect.onchange = ()=> renderExSections(exSelect.value);
+    exSaveBtn.onclick = async ()=>{
+      const wsId = exSelect.value; if(!wsId) return;
+      const data = { ...allExamples };
+      data[wsId] = {};
+      exWrap.querySelectorAll('.ex-ta').forEach(ta=>{ if(ta.value.trim()) data[wsId][ta.dataset.key] = ta.value.trim(); });
+      const ok = await saveExamples(data);
+      if(ok) toast('예시 답안을 저장했어요.');
+    };
 
     document.getElementById('s-recover-students').onclick = async () => {
       if(!confirm('records 컬렉션에서 학생 목록을 복구합니다.\n기존 목록이 덮어씌워집니다. 계속하시겠어요?')) return;
