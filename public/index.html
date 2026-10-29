@@ -2935,25 +2935,32 @@ AI를 참고 자료로 활용하는 것과 AI에게 생각을 위탁하는 것 �
     }
 
     // ── 잇다 그리드 ──
+    // start가 null이면 마감일(end)까지만 체크 (언제 제출해도 기한내)
     const BOOK_ROUNDS = [
-      { label: '1회', start: '2026-10-26', end: '2026-10-30' },
-      { label: '2회', start: '2026-11-09', end: '2026-11-18' },
-      { label: '3회', start: '2026-11-30', end: '2026-12-04' },
-      { label: '4회', start: '2026-12-11', end: '2026-12-16' },
+      { label: '1회', start: null,         end: '2026-11-18', display: '~11/18' },
+      { label: '2회', start: '2026-11-30', end: '2026-12-04', display: '11/30~12/04' },
+      { label: '3회', start: '2026-12-11', end: '2026-12-16', display: '12/11~12/16' },
+      { label: '4회', start: null,         end: null,          display: '미정' },
     ];
+    function bookTiming(endDate, round){
+      if(!endDate) return null;
+      if(!round.end) return null; // 미정
+      const afterStart = !round.start || endDate >= round.start;
+      const beforeEnd  = endDate <= round.end;
+      return (afterStart && beforeEnd) ? 'on' : 'late';
+    }
     function renderBookGrid(){
       const sortedStudents = sortStudents(students.filter(s=>/^(22|23|24)기/.test(s.name)));
       if(!sortedStudents.length) return `<div class="empty"><div class="big">📚</div>학생이 없어요.</div>`;
       // 완독일 기준 오름차순 정렬 후 순서대로 각 회차에 배정
       const rows = sortedStudents.map(s=>{
         const books = s.record.entries.filter(e=>e.type==='book').sort((a,b)=>(a.endDate||'') < (b.endDate||'') ? -1 : 1);
-        const onTimeCount = BOOK_ROUNDS.filter((r,i)=>{ const b=books[i]; return b&&b.endDate>=r.start&&b.endDate<=r.end; }).length;
+        const onTimeCount = BOOK_ROUNDS.filter((r,i)=>{ const b=books[i]; return bookTiming(b&&b.endDate,r)==='on'; }).length;
         const cells = BOOK_ROUNDS.map((r,i)=>{
           const b = books[i];
           if(!b) return `<td style="padding:8px;text-align:center;border:1px solid var(--paper-line);color:var(--ink-soft);">⬜</td>`;
-          const timing = b.endDate>=r.start&&b.endDate<=r.end ? 'on' : 'late';
+          const timing = bookTiming(b.endDate, r);
           const cell = cellHtml(true, b.score, 'book-cell', `data-student="${esc(s.name)}" data-eid="${esc(b.id)}"`, false, timing);
-          // 책 제목 + 완독일을 title tooltip으로
           return cell.replace('<td ', `<td title="${esc(b.title)} (${fmtDate(b.endDate)})" `);
         }).join('');
         const scoreColor = onTimeCount===4?'var(--forest)':onTimeCount>=2?'var(--gold)':'var(--clay)';
@@ -2963,7 +2970,7 @@ AI를 참고 자료로 활용하는 것과 AI에게 생각을 위탁하는 것 �
           <td style="padding:8px;text-align:center;border:1px solid var(--paper-line);font-weight:700;color:${scoreColor};">${onTimeCount}/4</td>
         </tr>`;
       }).join('');
-      const roundHeaders = BOOK_ROUNDS.map(r=>`<th style="padding:6px 8px;text-align:center;border:1px solid var(--paper-line);white-space:nowrap;font-size:12px;">${r.label}<br/><span style="font-size:10px;font-weight:400;color:var(--ink-soft);">${r.start.slice(5).replace('-','/')}~${r.end.slice(5).replace('-','/')}</span></th>`).join('');
+      const roundHeaders = BOOK_ROUNDS.map(r=>`<th style="padding:6px 8px;text-align:center;border:1px solid var(--paper-line);white-space:nowrap;font-size:12px;">${r.label}<br/><span style="font-size:10px;font-weight:400;color:var(--ink-soft);">${r.display}</span></th>`).join('');
       return `<div style="overflow-x:auto;"><table style="border-collapse:collapse;width:100%;font-size:13px;">
         <thead><tr style="background:var(--sage);">
           <th style="padding:8px 12px;text-align:left;border:1px solid var(--paper-line);min-width:90px;">학생</th>
