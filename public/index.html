@@ -2887,16 +2887,22 @@ AI를 참고 자료로 활용하는 것과 AI에게 생각을 위탁하는 것 �
 
     function scoreLabel(sc){ return sc===3?'★★★':sc===2?'★★':sc===1?'★':'-'; }
     function scoreColor(sc){ return sc===3?'var(--forest)':sc===2?'var(--gold)':sc===1?'var(--clay)':'var(--ink-soft)'; }
-    function cellHtml(submitted, score, cls, dsAttrs, revised){
+    function cellHtml(submitted, score, cls, dsAttrs, revised, timing){
       if(!submitted) return `<td style="padding:8px;text-align:center;border:1px solid var(--paper-line);color:var(--ink-soft);">⬜</td>`;
       const icon = score?'🟢':'🟡';
-      return `<td style="padding:8px;text-align:center;border:1px solid var(--paper-line);cursor:pointer;background:${score?'var(--sage)':'#FFFDE7'};" class="${cls}" ${dsAttrs}>
+      const timingBadge = timing==='on'
+        ? `<div style="font-size:9px;background:#E8F5E9;color:#2E7D32;border:1px solid #A5D6A7;border-radius:8px;padding:0 4px;margin-top:2px;white-space:nowrap;">기한내</div>`
+        : timing==='late'
+        ? `<div style="font-size:9px;background:#FFF3E0;color:#E65100;border:1px solid #FFCC80;border-radius:8px;padding:0 4px;margin-top:2px;white-space:nowrap;">기한후</div>`
+        : '';
+      return `<td style="padding:6px 8px;text-align:center;border:1px solid var(--paper-line);cursor:pointer;background:${score?'var(--sage)':'#FFFDE7'};" class="${cls}" ${dsAttrs}>
         <div>${icon}</div>
         ${score?`<div style="font-size:11px;color:${scoreColor(score)};font-weight:700;">${scoreLabel(score)}</div>`:'<div style="font-size:10px;color:var(--ink-soft);">미평가</div>'}
+        ${timingBadge}
         ${revised?`<div style="font-size:10px;color:#7B5EA7;font-weight:700;">수정됨</div>`:''}
       </td>`;
     }
-    const legend = `<div style="font-size:11px;color:var(--ink-soft);margin-top:6px;">⬜ 미제출 &nbsp;&nbsp; 🟡 제출 (미평가) &nbsp;&nbsp; 🟢 제출 + 평가 완료 &nbsp;&nbsp; <span style="color:#7B5EA7;font-weight:700;">수정됨</span> 피드백 후 수정 제출</div>`;
+    const legend = `<div style="font-size:11px;color:var(--ink-soft);margin-top:6px;">⬜ 미제출 &nbsp;&nbsp; 🟡 제출 (미평가) &nbsp;&nbsp; 🟢 제출 + 평가 완료 &nbsp;&nbsp; <span style="font-size:9px;background:#E8F5E9;color:#2E7D32;border:1px solid #A5D6A7;border-radius:8px;padding:0 4px;">기한내</span> <span style="font-size:9px;background:#FFF3E0;color:#E65100;border:1px solid #FFCC80;border-radius:8px;padding:0 4px;">기한후</span> &nbsp;&nbsp; <span style="color:#7B5EA7;font-weight:700;">수정됨</span> 피드백 후 수정 제출</div>`;
 
     // ── 펼치다 그리드 ──
     function renderWsGrid(){
@@ -2919,8 +2925,9 @@ AI를 참고 자료로 활용하는 것과 AI에게 생각을 위탁하는 것 �
               </tr></thead>
               <tbody>${studs.map(s=>{
                 const wsMap=s.record.worksheets||{};
+                const gradeM=s.name.match(/^(\d+기)/); const sGrade=gradeM?gradeM[1]:'';
                 return `<tr><td style="padding:8px 12px;border:1px solid var(--paper-line);font-weight:600;">${esc(s.name)}</td>
-                ${wsList.map(w=>{ const ans=wsMap[w.id]; return cellHtml(ans&&ans.submittedAt, ans&&ans.score, 'ws-cell', `data-student="${esc(s.name)}" data-wsid="${esc(w.id)}"`); }).join('')}</tr>`;
+                ${wsList.map(w=>{ const ans=wsMap[w.id]; const sub=ans&&ans.submittedAt; const date=sub?sub.slice(0,10):null; const dl=w.deadlines?(w.deadlines[sGrade]||Object.values(w.deadlines)[0]):w.deadline; const timing=date&&dl?(date<=dl?'on':'late'):null; return cellHtml(!!sub, ans&&ans.score, 'ws-cell', `data-student="${esc(s.name)}" data-wsid="${esc(w.id)}"`, false, timing); }).join('')}</tr>`;
               }).join('')}</tbody>
             </table>
           </div>${legend}
@@ -2991,8 +2998,9 @@ AI를 참고 자료로 활용하는 것과 AI에게 생각을 위탁하는 것 �
         <tbody>${sortedStudents.map(s=>{
           const freeMap={};
           s.record.entries.filter(e=>e.type==='free').forEach(e=>{ freeMap[e.weekKey]=e; });
+          const gradeM=s.name.match(/^(\d+기)/); const sGrade=gradeM?gradeM[1]:'';
           return `<tr><td style="padding:8px 12px;border:1px solid var(--paper-line);font-weight:600;">${esc(s.name)}</td>
-          ${allCols.map(wk=>{ const realWk=colAliasMap[wk]||wk; const e=freeMap[realWk]; const revised=!!(e&&e.revisions&&e.revisions.length&&e.teacherComment); return cellHtml(!!e, e&&e.score, 'free-cell', `data-student="${esc(s.name)}" data-eid="${esc(e?e.id:'')}" data-wk="${esc(realWk)}"`, revised); }).join('')}
+          ${allCols.map(wk=>{ const realWk=colAliasMap[wk]||wk; const e=freeMap[realWk]; const revised=!!(e&&e.revisions&&e.revisions.length&&e.teacherComment); const topic=FREE_TOPICS.find(t=>t.weekKey===realWk.replace(/-2$/,'')); const dl=topic&&topic.deadlines?topic.deadlines[sGrade]:null; const date=e?e.date:null; const timing=date&&dl?(date<=dl?'on':'late'):null; return cellHtml(!!e, e&&e.score, 'free-cell', `data-student="${esc(s.name)}" data-eid="${esc(e?e.id:'')}" data-wk="${esc(realWk)}"`, revised, timing); }).join('')}
           </tr>`;
         }).join('')}</tbody>
       </table></div>${legend}`;
