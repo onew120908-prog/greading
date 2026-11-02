@@ -3543,6 +3543,17 @@ AI를 참고 자료로 활용하는 것과 AI에게 생각을 위탁하는 것 �
             <div class="section-desc" style="margin-top:6px;">학생 목록이 사라졌을 때 기록(records) 데이터를 기반으로 복구합니다.</div>
           </div>
         </div>
+
+        <div class="setting-card">
+          <h3>📦 데이터 백업</h3>
+          <div class="section-desc">모든 학생 기록을 JSON 파일로 내려받아 백업할 수 있어요. 데이터가 사라지기 전에 주기적으로 저장해 두세요.</div>
+          <div style="margin-top:10px;display:flex;gap:10px;flex-wrap:wrap;">
+            <button class="btn btn-primary" id="s-backup-download">⬇️ 전체 데이터 백업 다운로드</button>
+            <button class="btn" id="s-backup-restore" style="background:#6A8F7A;color:#fff;">📂 백업 파일로 복원</button>
+          </div>
+          <input type="file" id="s-backup-file" accept=".json" style="display:none;"/>
+          <div class="section-desc" style="margin-top:8px;">복원은 백업 파일에 있는 학생 기록만 덮어씁니다. 기존 다른 학생 기록은 유지됩니다.</div>
+        </div>
       </div>`;
 
     document.getElementById('home').onclick = () => { state.role=null; render(); };
@@ -3686,6 +3697,54 @@ AI를 참고 자료로 활용하는 것과 AI에게 생각을 위탁하는 것 �
         state.teacherView = 'settings';
         render();
       } catch(e){ console.error(e); toast('복구 중 오류가 발생했어요.'); }
+    };
+
+    // ── 백업 다운로드 ──
+    document.getElementById('s-backup-download').onclick = async () => {
+      const btn = document.getElementById('s-backup-download');
+      btn.textContent = '⏳ 불러오는 중...'; btn.disabled = true;
+      try {
+        const snap = await db.collection('records').get();
+        const records = {};
+        snap.docs.forEach(d=>{ if(d.id && d.id!=='_placeholder') records[d.id] = d.data(); });
+        const payload = { exportedAt: new Date().toISOString(), records };
+        const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        const date = new Date().toISOString().slice(0,10);
+        a.href = url; a.download = `greading-backup-${date}.json`;
+        a.click(); URL.revokeObjectURL(url);
+        toast(`${Object.keys(records).length}명 데이터 백업 완료!`);
+      } catch(e){ console.error(e); toast('백업 중 오류가 발생했어요.'); }
+      finally { btn.textContent = '⬇️ 전체 데이터 백업 다운로드'; btn.disabled = false; }
+    };
+
+    // ── 백업 복원 ──
+    document.getElementById('s-backup-restore').onclick = () => {
+      document.getElementById('s-backup-file').click();
+    };
+    document.getElementById('s-backup-file').onchange = async (e) => {
+      const file = e.target.files[0]; if(!file) return;
+      try {
+        const text = await file.text();
+        const data = JSON.parse(text);
+        if(!data.records) { toast('올바른 백업 파일이 아니에요.'); return; }
+        const names = Object.keys(data.records);
+        if(!names.length) { toast('복원할 데이터가 없어요.'); return; }
+        if(!confirm(`백업 파일(${data.exportedAt?.slice(0,10)||'날짜 불명'})에서 ${names.length}명 기록을 복원합니다.\n기존 기록이 덮어씌워집니다. 계속할까요?`)) return;
+        const btn = document.getElementById('s-backup-restore');
+        btn.textContent = '⏳ 복원 중...'; btn.disabled = true;
+        let ok = 0;
+        for(const [name, rec] of Object.entries(data.records)){
+          const saved = await saveRecord(name, rec);
+          if(saved) ok++;
+        }
+        await saveStudents(names);
+        toast(`${ok}명 복원 완료!`);
+        await loadTeacherList();
+        state.teacherView = 'settings'; render();
+      } catch(err){ console.error(err); toast('복원 중 오류가 발생했어요.'); }
+      finally { e.target.value = ''; }
     };
 
     shell.querySelectorAll('.stu-del').forEach(btn=>{
