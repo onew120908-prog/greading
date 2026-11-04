@@ -520,6 +520,12 @@ const db = firebase.firestore();
     try { localStorage.removeItem(draftKey(tab, sub)); } catch(e){}
   }
   let _draftTimers = {};
+
+  // ── 로그인 상태 유지 ──
+  const SESSION_KEY = 'greading_session';
+  function saveSession(){ try { localStorage.setItem(SESSION_KEY, JSON.stringify({ role: state.role, studentName: state.studentName })); } catch(e){} }
+  function clearSession(){ try { localStorage.removeItem(SESSION_KEY); } catch(e){} }
+  function restoreSession(){ try { const v = localStorage.getItem(SESSION_KEY); return v ? JSON.parse(v) : null; } catch(e){ return null; } }
   function scheduleDraft(tab, sub, getFn){
     const k = tab + '_' + (sub||'');
     clearTimeout(_draftTimers[k]);
@@ -859,7 +865,7 @@ const db = firebase.firestore();
           <button class="btn btn-primary btn-block" id="pw-go">로그인</button>
         </div>
       </div>`;
-    document.getElementById('home').onclick = () => { state.role=null; render(); };
+    document.getElementById('home').onclick = () => { state.role=null; clearSession(); render(); };
     const pw = document.getElementById('pw');
     pw.focus();
     const submit = async () => {
@@ -868,6 +874,7 @@ const db = firebase.firestore();
       if(pw.value === correct){
         state.role = 'teacher';
         state.teacherView = 'list';
+        saveSession();
         render();
         loadTeacherList();
       } else {
@@ -897,7 +904,7 @@ const db = firebase.firestore();
           <button class="btn btn-primary btn-block" id="go">기록장 열기</button>
         </div>
       </div>`;
-    document.getElementById('home').onclick = () => { state.role=null; render(); };
+    document.getElementById('home').onclick = () => { state.role=null; clearSession(); render(); };
     const nm = document.getElementById('nm');
     nm.focus();
     const nmErr = document.getElementById('nm-err');
@@ -915,6 +922,7 @@ const db = firebase.firestore();
       state.studentName = v;
       state.record = await loadRecord(v);
       state.tab = cfg().sections[0]?.key || 'daily';
+      saveSession();
       render();
     };
     document.getElementById('go').onclick = submit;
@@ -943,8 +951,8 @@ const db = firebase.firestore();
         ${tabsHtml()}
         <div class="panel" id="panel"></div>
       </div>`;
-    document.getElementById('home').onclick = () => { state.role=null; state.studentName=null; render(); };
-    document.getElementById('switch-name').onclick = () => { state.studentName=null; state.record=null; render(); };
+    document.getElementById('home').onclick = () => { state.role=null; state.studentName=null; clearSession(); render(); };
+    document.getElementById('switch-name').onclick = () => { state.studentName=null; state.record=null; saveSession(); render(); };
     shell.querySelectorAll('.tabbtn').forEach(b=>{
       b.onclick = async () => {
         state.tab = b.dataset.tab;
@@ -2831,7 +2839,7 @@ AI를 참고 자료로 활용하는 것과 AI에게 생각을 위탁하는 것 �
             </div>`;
           }).join('')}</div>` : `<div class="empty"><div class="big">🧑‍🎓</div>아직 등록된 학생이 없어요.<br/>학생이 먼저 이름으로 기록장을 열면 여기에 나타나요.</div>`}
       </div>`;
-    document.getElementById('home').onclick = () => { state.role=null; render(); };
+    document.getElementById('home').onclick = () => { state.role=null; clearSession(); render(); };
     document.getElementById('t-pelchi').onclick = () => { state.teacherView='pelchi'; render(); };
     document.getElementById('t-settings').onclick = () => { state.teacherView='settings'; render(); };
     const dlBtn = document.getElementById('dl-excel');
@@ -2910,7 +2918,7 @@ AI를 참고 자료로 활용하는 것과 AI에게 생각을 위탁하는 것 �
           </div>`;
         }).join('')}</div>` : `<div class="empty"><div class="big">📔</div>아직 이 학생의 기록이 없어요.</div>`}
       </div>`;
-    document.getElementById('home').onclick = () => { state.role=null; render(); };
+    document.getElementById('home').onclick = () => { state.role=null; clearSession(); render(); };
     document.getElementById('t-pelchi').onclick = () => { state.teacherView='pelchi'; render(); };
     document.getElementById('t-settings').onclick = () => { state.teacherView='settings'; render(); };
     document.getElementById('back').onclick = () => { state.teacherView='list'; render(); };
@@ -3177,7 +3185,7 @@ AI를 참고 자료로 활용하는 것과 AI에게 생각을 위탁하는 것 �
       ${renderModal()}
     `;
 
-    document.getElementById('home').onclick = () => { state.role=null; render(); };
+    document.getElementById('home').onclick = () => { state.role=null; clearSession(); render(); };
     document.getElementById('t-pelchi').onclick = () => {};
     document.getElementById('t-settings').onclick = () => { state.teacherView='settings'; render(); };
 
@@ -3595,7 +3603,7 @@ AI를 참고 자료로 활용하는 것과 AI에게 생각을 위탁하는 것 �
         </div>
       </div>`;
 
-    document.getElementById('home').onclick = () => { state.role=null; render(); };
+    document.getElementById('home').onclick = () => { state.role=null; clearSession(); render(); };
     document.getElementById('t-pelchi').onclick = () => { state.teacherView='pelchi'; render(); };
     document.getElementById('t-settings').onclick = () => {};
     document.getElementById('back').onclick = () => { state.teacherView='list'; render(); };
@@ -3806,7 +3814,21 @@ AI를 참고 자료로 활용하는 것과 AI에게 생각을 위탁하는 것 �
   // ---------- init ----------
   (async () => {
     await loadConfig();
-    render();
+    const saved = restoreSession();
+    if(saved?.role === 'teacher'){
+      state.role = 'teacher';
+      state.teacherView = 'list';
+      render();
+      loadTeacherList();
+    } else if(saved?.role === 'student' && saved?.studentName){
+      state.role = 'student';
+      state.studentName = saved.studentName;
+      state.record = await loadRecord(saved.studentName);
+      state.tab = cfg().sections[0]?.key || 'daily';
+      render();
+    } else {
+      render();
+    }
   })();
 })();
 </script>
