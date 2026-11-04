@@ -791,7 +791,7 @@ async function analyze(text) {
   const streamEl = document.getElementById('stream-text');
 
   try {
-    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+    const resp = await fetch('https://old-salad-cba9.onew120908.workers.dev', {
       method: 'POST',
       headers: {
         'x-api-key': state.apiKey,
