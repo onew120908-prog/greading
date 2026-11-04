@@ -799,9 +799,9 @@ async function analyze(text) {
         'content-type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'claude-opus-5',
+        model: 'claude-opus-4-5',
         max_tokens: 4096,
-        stream: true,
+        stream: false,
         system: SYSTEM_PROMPT,
         messages: [{
           role: 'user',
@@ -818,33 +818,12 @@ async function analyze(text) {
       throw new Error(msg);
     }
 
-    const reader = resp.body.getReader();
-    const decoder = new TextDecoder();
-
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      const chunk = decoder.decode(value);
-      const lines = chunk.split('\n');
-      for (const line of lines) {
-        if (!line.startsWith('data: ')) continue;
-        const data = line.slice(6);
-        if (data === '[DONE]') break;
-        try {
-          const ev = JSON.parse(data);
-          if (ev.type === 'content_block_delta' && ev.delta?.type === 'text_delta') {
-            accumulated += ev.delta.text;
-            streamEl.textContent = accumulated;
-            streamEl.scrollTop = streamEl.scrollHeight;
-          }
-        } catch(e) {}
-      }
-    }
+    const data = await resp.json();
+    accumulated = data.content?.[0]?.text || '';
 
     // Parse JSON
     let parsed;
     try {
-      // Extract JSON from response (handle potential markdown code blocks)
       const jsonMatch = accumulated.match(/\{[\s\S]*\}/);
       if (!jsonMatch) throw new Error('JSON을 찾을 수 없습니다.');
       parsed = JSON.parse(jsonMatch[0]);
