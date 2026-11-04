@@ -797,7 +797,6 @@ async function analyze(text) {
         'x-api-key': state.apiKey,
         'anthropic-version': '2023-06-01',
         'content-type': 'application/json',
-        'anthropic-dangerous-direct-browser-ipc': 'true',
       },
       body: JSON.stringify({
         model: 'claude-opus-5',
