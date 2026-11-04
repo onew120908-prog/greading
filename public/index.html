@@ -1282,6 +1282,7 @@ const db = firebase.firestore();
     {
       weekKey: '2026-W45',
       deadlines: { '22기': '2026-11-06', '23기': '2026-11-04', '24기': '2026-11-06' },
+      topic: `여러분은 평소 자신을 타인과 비교하는 편인가요? 비교가 자신에게 도움이 됐던 경험 또는 오히려 힘들게 했던 경험을 떠올리며, 비교를 어떻게 바라봐야 하는지에 대한 자신의 생각을 써 보세요.`,
       article: `왜 우리는 남과 비교하는가 — 비교가 만드는 행복과 불행
 
 오늘 아침 학교에 오는 길, 여러분은 혹시 이런 생각을 했는가. '저 친구는 나보다 성적이 좋은데', '저 아이는 나보다 운동을 잘하는데', '왜 나만 이럴까.' 이처럼 타인과 자신을 비교하는 행위는 인간에게 너무나 자연스러운 습관이다. 그런데 이 비교가 우리를 더 나은 사람으로 만드는가, 아니면 행복을 갉아먹는 함정인가.
@@ -1422,6 +1423,7 @@ AI를 참고 자료로 활용하는 것과 AI에게 생각을 위탁하는 것 �
           <div style="font-size:15px;font-weight:700;color:var(--ink);margin-bottom:10px;">읽고, 요약하고, 내 생각 쓰기</div>
           <button id="at-${sfx}" style="font-size:12px;font-weight:700;color:var(--forest);background:none;border:1px solid var(--forest);border-radius:6px;padding:4px 10px;cursor:pointer;margin-bottom:10px;">📰 읽기 자료 펼치기</button>
           <div id="ab-${sfx}" hidden style="margin-bottom:12px;background:var(--paper);border:1px solid var(--paper-line);border-radius:8px;padding:14px;font-size:13px;line-height:1.85;color:var(--ink);white-space:pre-wrap;">${esc(topic.article)}</div>
+          ${topic.topic ? `<div style="background:#FFF8E1;border-left:4px solid #F9A825;border-radius:0 10px 10px 0;padding:12px 16px;margin-bottom:12px;font-size:13px;line-height:1.75;color:var(--ink);"><div style="font-size:11px;font-weight:700;color:#F57F17;margin-bottom:6px;">✍️ 주제</div>${esc(topic.topic)}</div>` : ''}
           ${is23 && topic.article2 ? `
             <div style="font-size:11px;font-weight:700;color:var(--clay);margin-bottom:4px;">📌 23기 추가 과제</div>
             <button id="at2-${sfx}" style="font-size:12px;font-weight:700;color:var(--clay);background:none;border:1px solid var(--clay);border-radius:6px;padding:4px 10px;cursor:pointer;margin-bottom:10px;">📰 두 번째 읽기 자료 펼치기</button>
