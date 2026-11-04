@@ -769,11 +769,6 @@ document.getElementById('analyze-btn').onclick = async () => {
   if (state.analyzing) return;
   const text = textarea.value.trim();
   if (!text) { showError('텍스트를 먼저 입력해 주세요.'); return; }
-  if (!state.apiKey) {
-    showError('API Key가 필요해요. 상단의 "API Key" 버튼을 눌러 입력해 주세요.');
-    document.getElementById('key-strip').classList.add('open');
-    return;
-  }
   hideError();
   await analyze(text);
 };
@@ -794,7 +789,6 @@ async function analyze(text) {
     const resp = await fetch('https://old-salad-cba9.onew120908.workers.dev', {
       method: 'POST',
       headers: {
-        'x-api-key': state.apiKey,
         'anthropic-version': '2023-06-01',
         'content-type': 'application/json',
       },
