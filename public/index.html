@@ -523,9 +523,9 @@ const db = firebase.firestore();
 
   // ── 로그인 상태 유지 ──
   const SESSION_KEY = 'greading_session';
-  function saveSession(){ try { localStorage.setItem(SESSION_KEY, JSON.stringify({ role: state.role, studentName: state.studentName })); } catch(e){} }
-  function clearSession(){ try { localStorage.removeItem(SESSION_KEY); } catch(e){} }
-  function restoreSession(){ try { const v = localStorage.getItem(SESSION_KEY); return v ? JSON.parse(v) : null; } catch(e){ return null; } }
+  function saveSession(){ try { sessionStorage.setItem(SESSION_KEY, JSON.stringify({ role: state.role, studentName: state.studentName })); } catch(e){} }
+  function clearSession(){ try { sessionStorage.removeItem(SESSION_KEY); } catch(e){} }
+  function restoreSession(){ try { const v = sessionStorage.getItem(SESSION_KEY); return v ? JSON.parse(v) : null; } catch(e){ return null; } }
   function scheduleDraft(tab, sub, getFn){
     const k = tab + '_' + (sub||'');
     clearTimeout(_draftTimers[k]);
