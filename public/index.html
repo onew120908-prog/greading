@@ -3413,11 +3413,21 @@ AI를 참고 자료로 활용하는 것과 AI에게 생각을 위탁하는 것 �
           const topic = FREE_TOPICS.find(t=>t.weekKey===e.weekKey);
           aiDraftBtn.disabled = true; aiDraftBtn.textContent = '생성 중...';
           try {
-            const res = await fetch('/api/evaluate', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ essay: e.content||'', article: topic?topic.article:'' }) });
+            let apiKey = localStorage.getItem('claude_api_key');
+            if(!apiKey){ apiKey = prompt('Anthropic API 키를 입력하세요 (한 번만 입력하면 저장됩니다):'); if(!apiKey){ aiDraftBtn.disabled=false; aiDraftBtn.textContent='✏️ 평가 작성 도우미'; return; } localStorage.setItem('claude_api_key', apiKey); }
+            const sysPrompt = `당신은 중학생 독서·논술 선생님입니다. 학생의 에세이를 읽고 한국어로 간결한 코멘트를 작성하세요. 잘된 점 1가지와 개선할 점 1가지를 각각 한두 문장으로, 따뜻하고 구체적으로 써주세요. 총 150자 내외.`;
+            const userMsg = `[기사 주제]\n${topic?topic.topic:''}\n\n[학생 에세이]\n${e.content||''}`;
+            const res = await fetch('https://api.anthropic.com/v1/messages', {
+              method:'POST',
+              headers:{'Content-Type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+              body: JSON.stringify({ model:'claude-haiku-4-5', max_tokens:400, system:sysPrompt, messages:[{role:'user',content:userMsg}] })
+            });
+            if(res.status===401){ localStorage.removeItem('claude_api_key'); toast('API 키가 올바르지 않아요. 다시 시도해 주세요.'); aiDraftBtn.disabled=false; aiDraftBtn.textContent='✏️ 평가 작성 도우미'; return; }
             const data = await res.json();
-            if(data.result){ document.getElementById('act-modal-comment').value = data.result; }
-            else toast(data.error||'AI 평가 실패');
-          } catch(err){ toast('AI 평가 요청 실패'); }
+            const result = data.content&&data.content[0]&&data.content[0].text;
+            if(result){ document.getElementById('act-modal-comment').value = result; }
+            else toast(data.error&&data.error.message||'AI 평가 실패');
+          } catch(err){ toast('API 호출 실패: '+err.message); }
           aiDraftBtn.disabled = false; aiDraftBtn.textContent = '✏️ 평가 작성 도우미';
         };
       }
