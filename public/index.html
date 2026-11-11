@@ -1413,7 +1413,10 @@ AI를 참고 자료로 활용하는 것과 AI에게 생각을 위탁하는 것 �
     frees.forEach(e=>{ freeMap[e.weekKey]=e; });
     const is23 = studentGrade()==='23기';
     const curWk = getWeekKey(todayStr());
-    const topics = [...FREE_TOPICS].reverse(); // 최신 주차 먼저
+    const topics = [...FREE_TOPICS].reverse(); // 최신순
+    const totalTopics = FREE_TOPICS.length;
+    // 회차 번호: FREE_TOPICS는 최신순이므로 역순 인덱스
+    const roundNumOf = wk => totalTopics - FREE_TOPICS.findIndex(t=>t.weekKey===wk.replace(/-2$/,''));
 
     const structureGuide = `
       <div style="background:var(--paper);border:1px solid var(--paper-line);border-radius:8px;padding:12px;margin-bottom:14px;font-size:12.5px;line-height:1.8;color:var(--ink);">
@@ -1429,9 +1432,9 @@ AI를 참고 자료로 활용하는 것과 AI에게 생각을 위탁하는 것 �
         </div>
       </div>`;
 
-    const topicsHtml = topics.map(topic => {
+    const topicsHtml = topics.map((topic, topicIdx) => {
       const wk = topic.weekKey;
-      const [,w] = wk.split('-W');
+      const roundNum = topics.length - topicIdx;
       const sfx = wk.replace(/[^a-zA-Z0-9]/g,'_');
       const isCurWk = wk === curWk;
       const entry = freeMap[wk];
@@ -1451,7 +1454,7 @@ AI를 참고 자료로 활용하는 것과 AI에게 생각을 위탁하는 것 �
 
       return `
         <div style="background:var(--sage);border-left:4px solid var(--forest);border-radius:0 12px 12px 0;padding:14px 16px;margin-bottom:10px;">
-          <div style="font-size:12px;font-weight:700;color:var(--forest);margin-bottom:4px;letter-spacing:0.03em;">✏️ ${w}주차 글쓰기${isCurWk?' · 이번 주':' · 늦게 제출 가능'}</div>
+          <div style="font-size:12px;font-weight:700;color:var(--forest);margin-bottom:4px;letter-spacing:0.03em;">✏️ ${roundNum}회 글쓰기${isCurWk?' · 이번 주':' · 늦게 제출 가능'}</div>
           <div style="font-size:15px;font-weight:700;color:var(--ink);margin-bottom:10px;">읽고, 요약하고, 내 생각 쓰기</div>
           <button id="at-${sfx}" style="font-size:12px;font-weight:700;color:var(--forest);background:none;border:1px solid var(--forest);border-radius:6px;padding:4px 10px;cursor:pointer;margin-bottom:10px;">📰 읽기 자료 펼치기</button>
           <div id="ab-${sfx}" hidden style="margin-bottom:12px;background:var(--paper);border:1px solid var(--paper-line);border-radius:8px;padding:14px;font-size:13px;line-height:1.85;color:var(--ink);white-space:pre-wrap;">${esc(topic.article)}</div>
@@ -1463,7 +1466,7 @@ AI를 참고 자료로 활용하는 것과 AI에게 생각을 위탁하는 것 �
           ` : ''}
         </div>
         <div style="margin-bottom:4px;">
-          <div class="section-title serif" style="font-size:15px;margin-bottom:6px;">✏️ ${w}주차 첫 번째 글쓰기</div>
+          <div class="section-title serif" style="font-size:15px;margin-bottom:6px;">✏️ ${roundNum}회 첫 번째 글쓰기</div>
           <div class="weeklock">${entry?'✅ 이미 썼어요. 아래에서 수정할 수 있어요.':'✏️ 아직 쓰지 않았어요.'}</div>
           ${entry?.teacherComment ? `<div style="background:#F3EDFF;border-left:4px solid #7B5EA7;border-radius:0 10px 10px 0;padding:14px 16px;margin-bottom:12px;font-size:13px;line-height:1.85;white-space:pre-wrap;color:var(--ink);"><div style="font-size:12px;font-weight:700;color:#7B5EA7;margin-bottom:6px;">💬 선생님 피드백</div>${esc(entry.teacherComment)}</div>` : ''}
           ${writeFormHtml(entry, sfx+'a', '글의 제목을 지어 주세요', `<div class="field" style="margin-top:10px;"><label>🔒 비밀번호 설정 <span style="font-weight:400;color:var(--ink-soft);">(선택 · 비워두면 공개)</span></label><input id="fp-${sfx}a" type="password" placeholder="비밀번호 입력 (선택사항)" maxlength="20" autocomplete="new-password"/></div>`)}
@@ -1471,7 +1474,7 @@ AI를 참고 자료로 활용하는 것과 AI에게 생각을 위탁하는 것 �
         ${is23 && topic.article2 ? `
           <div class="divider"></div>
           <div style="margin-bottom:4px;">
-            <div class="section-title serif" style="font-size:15px;margin-bottom:6px;">✏️ ${w}주차 두 번째 글쓰기 <span style="font-size:12px;font-weight:400;color:var(--clay);">23기 추가 과제</span></div>
+            <div class="section-title serif" style="font-size:15px;margin-bottom:6px;">✏️ ${roundNum}회 두 번째 글쓰기 <span style="font-size:12px;font-weight:400;color:var(--clay);">23기 추가 과제</span></div>
             <div class="weeklock">${entry2?'✅ 이미 썼어요. 아래에서 수정할 수 있어요.':'✏️ 아직 쓰지 않았어요.'}</div>
             ${writeFormHtml(entry2, sfx+'b', '두 번째 글의 제목을 지어 주세요', `<div class="field" style="margin-top:10px;"><label>🔒 비밀번호 설정 <span style="font-weight:400;color:var(--ink-soft);">(선택 · 비워두면 공개)</span></label><input id="fp-${sfx}b" type="password" placeholder="비밀번호 입력 (선택사항)" maxlength="20" autocomplete="new-password"/></div>`)}
           </div>
