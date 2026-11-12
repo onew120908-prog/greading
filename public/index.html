@@ -2777,10 +2777,16 @@ AI를 참고 자료로 활용하는 것과 AI에게 생각을 위탁하는 것 �
     return m ? m[1]+'기' : null;
   }
 
+  const REMOVED_WORKSHEET_IDS = ['odyssey-23-4'];
+
   async function loadWorksheets(){
     try {
       const doc = await db.collection('meta').doc('worksheets').get();
       let items = (doc.exists && doc.data().items) ? doc.data().items : [];
+      // 삭제된 BUILTIN 항목 제거
+      const beforeLen = items.length;
+      items = items.filter(w => !REMOVED_WORKSHEET_IDS.includes(w.id));
+      if(items.length !== beforeLen){ await db.collection('meta').doc('worksheets').set({ items }); }
       // BUILTIN에 새로 추가된 항목이 있으면 앞에 병합
       const newBuiltins = BUILTIN_WORKSHEETS.filter(b => !items.find(w => w.id === b.id));
       // 기존 항목에 BUILTIN의 deadline/deadlines 등 메타 필드 동기화
