@@ -3024,7 +3024,7 @@ AI를 참고 자료로 활용하는 것과 AI에게 생각을 위탁하는 것 �
               <div class="stat"><span class="dot ${hasFree?'dot-ok':'dot-warn'}"></span>이번 주 글쓰기 ${hasFree?'제출':'미제출'}</div>
               <div class="stat">최근 독서기록: ${lastDaily?fmtDate(lastDaily.date):'없음'}</div>
               <div class="stat">이번 달 스티커 ${cs.got} / ${cs.elapsed}일${cs.elapsed>0 && cs.got===cs.elapsed ? ' ⭐개근중' : ''}</div>
-              <div class="stat">전체 기록 ${totalEntries}개 · 피드백 대기 ${needFeedback}개</div>
+              <div class="stat">전체 기록 ${totalEntries}개</div>
             </div>`;
           }).join('')}</div>` : `<div class="empty"><div class="big">🧑‍🎓</div>아직 등록된 학생이 없어요.<br/>학생이 먼저 이름으로 기록장을 열면 여기에 나타나요.</div>`}
       </div>`;
