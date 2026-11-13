@@ -1065,7 +1065,7 @@ const db = firebase.firestore();
       <div class="section-title serif" style="font-size:15px;">최근 기록</div>
       ${todays.length ? `<div class="entry-list">${todays.slice(0,6).map(e=>`
         <div class="entry type-daily" data-id="${e.id}">
-          <div class="entry-top"><span class="entry-title">${esc(e.bookTitle)}${e.password?' 🔒':''}</span><div style="display:flex;align-items:center;gap:8px;"><span class="entry-date">${fmtDate(e.date)}</span>${!isEntryLocked(e)?`<button class="btn btn-ghost btn-sm entry-edit-btn" data-id="${e.id}" style="font-size:12px;padding:2px 8px;">수정</button>`:''}<button class="btn btn-ghost btn-sm entry-del-btn" data-id="${e.id}" style="color:var(--clay);font-size:12px;padding:2px 8px;">삭제</button></div></div>
+          <div class="entry-top"><span class="entry-title">${esc(e.bookTitle)}${e.password?' 🔒':''}</span><div style="display:flex;align-items:center;gap:8px;"><span class="entry-date">${fmtDateTime(e.createdAt||e.date)}</span>${!isEntryLocked(e)?`<button class="btn btn-ghost btn-sm entry-edit-btn" data-id="${e.id}" style="font-size:12px;padding:2px 8px;">수정</button>`:''}<button class="btn btn-ghost btn-sm entry-del-btn" data-id="${e.id}" style="color:var(--clay);font-size:12px;padding:2px 8px;">삭제</button></div></div>
           <div class="entry-meta">읽은 범위: ${esc(e.pagesRead||'-')}</div>
           ${isEntryLocked(e) ? lockOverlayHtml(e) : `<div class="entry-body">${esc(e.note)}</div>${revisionsHtml(e)}${feedbackHtml(e)}`}
         </div>`).join('')}</div>` : `<div class="empty"><div class="big">🗒️</div>아직 기록이 없어요. 오늘부터 시작해 볼까요?</div>`}
@@ -1172,7 +1172,7 @@ const db = firebase.firestore();
       <div class="section-title serif" style="font-size:15px;">읽은 책들</div>
       ${books.length ? `<div class="entry-list">${books.map(e=>`
         <div class="entry type-book" data-id="${e.id}">
-          <div class="entry-top"><span class="entry-title">${esc(e.title)}${e.password?' 🔒':''} <span style="color:var(--ink-soft); font-weight:400;">· ${esc(e.author||'')}</span></span><div style="display:flex;align-items:center;gap:8px;"><span class="entry-date">${fmtDate(e.startDate)} ~ ${fmtDate(e.endDate)}</span>${!isEntryLocked(e)?`<button class="btn btn-ghost btn-sm entry-edit-btn" data-id="${e.id}" style="font-size:12px;padding:2px 8px;">수정</button>`:''}<button class="btn btn-ghost btn-sm entry-del-btn" data-id="${e.id}" style="color:var(--clay);font-size:12px;padding:2px 8px;">삭제</button></div></div>
+          <div class="entry-top"><span class="entry-title">${esc(e.title)}${e.password?' 🔒':''} <span style="color:var(--ink-soft); font-weight:400;">· ${esc(e.author||'')}</span></span><div style="display:flex;align-items:center;gap:8px;"><span class="entry-date">${fmtDate(e.startDate)} ~ ${fmtDate(e.endDate)}${e.createdAt?` · 제출 ${fmtDateTime(e.createdAt)}`:''}</span>${!isEntryLocked(e)?`<button class="btn btn-ghost btn-sm entry-edit-btn" data-id="${e.id}" style="font-size:12px;padding:2px 8px;">수정</button>`:''}<button class="btn btn-ghost btn-sm entry-del-btn" data-id="${e.id}" style="color:var(--clay);font-size:12px;padding:2px 8px;">삭제</button></div></div>
           ${isEntryLocked(e) ? lockOverlayHtml(e) : `
           <div class="entry-meta"><span class="stars">${'★'.repeat(e.rating||0)}${'☆'.repeat(5-(e.rating||0))}</span></div>
           ${e.quote ? `<div class="quote-block">"${esc(e.quote)}"</div>` : ''}
@@ -1721,7 +1721,7 @@ AI를 참고 자료로 활용하는 것과 AI에게 생각을 위탁하는 것 �
         const body = e.type==='daily'? e.note : (e.type==='book'? e.review : e.content);
         const locked = isEntryLocked(e);
         return `<div class="entry type-${e.type}">
-          <div class="entry-top">${entryBadge(e.type)}${e.password?' 🔒':''}<span class="entry-date">${fmtDate(e.date)}</span></div>
+          <div class="entry-top">${entryBadge(e.type)}${e.password?' 🔒':''}<span class="entry-date">${fmtDateTime(e.createdAt||e.date)}</span></div>
           ${locked ? lockOverlayHtml(e) : `
           <div class="entry-title" style="margin-top:6px;">${esc(title)}</div>
           ${e.type==='book' && e.quote ? `<div class="quote-block">"${esc(e.quote)}"</div>` : ''}
@@ -2887,7 +2887,7 @@ AI를 참고 자료로 활용하는 것과 AI에게 생각을 위탁하는 것 �
       return `<div class="ws-card" data-wsid="${esc(ws.id)}">
         <div class="ws-card-head">
           <div class="ws-title">${esc(ws.title)}</div>
-          <div class="ws-meta">${ws.grades.join(' · ')}${submitted ? ` · ✅ 제출 완료 (${fmtDate(submitted.slice(0,10))})` : ''}</div>
+          <div class="ws-meta">${ws.grades.join(' · ')}${submitted ? ` · ✅ 제출 완료 (${fmtDateTime(submitted)})` : ''}</div>
         </div>
         <div class="ws-body">
           ${sectHtml}
