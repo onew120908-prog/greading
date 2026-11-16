@@ -1601,7 +1601,7 @@ AI를 참고 자료로 활용하는 것과 AI에게 생각을 위탁하는 것 �
           const locked = isEntryLocked(m);
           return `<div class="memo-card" id="mcard-${m.id}">
             <div class="memo-card-head" data-id="${m.id}">
-              <span class="memo-card-date">${fmtDateFull(m.date)}${m.updatedAt ? ' · 수정됨' : ''}${m.password?' 🔒':''}</span>
+              <span class="memo-card-date">${fmtDateTime(m.createdAt||m.date)}${m.updatedAt ? ` · 수정 ${fmtDateTime(m.updatedAt)}` : ''}${m.password?' 🔒':''}</span>
               <span class="memo-card-preview">${locked ? '비밀 메모예요' : esc(m.content.replace(/\n/g,' '))}</span>
               <div class="memo-card-actions">
                 ${!locked ? `<button class="memo-btn memo-btn-edit" data-id="${m.id}">수정</button>` : ''}
