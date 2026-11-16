@@ -1048,7 +1048,7 @@ const db = firebase.firestore();
     });
   }
 
-  function renderDailyTab(panel){
+  function renderDailyTab(panel, showAll){
     const todays = state.record.entries.filter(e=>e.type==='daily').sort((a,b)=> b.createdAt-a.createdAt);
     const dDraft = loadDraft('daily', null);
     panel.innerHTML = `
@@ -1063,17 +1063,21 @@ const db = firebase.firestore();
       ${pwFieldHtml('🔒 비밀번호 설정')}
       <button class="btn btn-primary" id="d-save">오늘 기록 저장</button>
       <div class="divider"></div>
-      <div class="section-title serif" style="font-size:15px;">최근 기록</div>
-      ${todays.length ? `<div class="entry-list">${todays.slice(0,6).map(e=>`
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+        <div class="section-title serif" style="font-size:15px;margin:0;">${showAll?'전체 기록':'최근 기록'}</div>
+        ${todays.length>6?`<button class="btn btn-ghost btn-sm" id="d-toggle-all" style="font-size:12px;">${showAll?'접기':'전체 보기 ('+todays.length+'개)'}</button>`:''}
+      </div>
+      ${todays.length ? `<div class="entry-list">${(showAll?todays:todays.slice(0,6)).map(e=>`
         <div class="entry type-daily" data-id="${e.id}">
           <div class="entry-top"><span class="entry-title">${esc(e.bookTitle)}${e.password?' 🔒':''}</span><div style="display:flex;align-items:center;gap:8px;"><span class="entry-date">${fmtDateTime(e.createdAt||e.date)}</span>${!isEntryLocked(e)?`<button class="btn btn-ghost btn-sm entry-edit-btn" data-id="${e.id}" style="font-size:12px;padding:2px 8px;">수정</button>`:''}<button class="btn btn-ghost btn-sm entry-del-btn" data-id="${e.id}" style="color:var(--clay);font-size:12px;padding:2px 8px;">삭제</button></div></div>
           <div class="entry-meta">읽은 범위: ${esc(e.pagesRead||'-')}</div>
           ${isEntryLocked(e) ? lockOverlayHtml(e) : `<div class="entry-body">${esc(e.note)}</div>${revisionsHtml(e)}${feedbackHtml(e)}`}
         </div>`).join('')}</div>` : `<div class="empty"><div class="big">🗒️</div>아직 기록이 없어요. 오늘부터 시작해 볼까요?</div>`}
     `;
+    document.getElementById('d-toggle-all')?.addEventListener('click', ()=>renderDailyTab(panel, !showAll));
     bindRevisionToggles(panel);
-    bindLockOverlays(panel, ()=>renderDailyTab(panel));
-    bindDeleteButtons(panel, '기록', ()=>renderDailyTab(panel));
+    bindLockOverlays(panel, ()=>renderDailyTab(panel, showAll));
+    bindDeleteButtons(panel, '기록', ()=>renderDailyTab(panel, showAll));
     panel.querySelectorAll('.entry-edit-btn').forEach(btn=>{
       btn.onclick = ()=>{
         const id = btn.dataset.id;
@@ -1096,7 +1100,7 @@ const db = firebase.firestore();
             <button class="btn btn-ghost btn-sm edit-cancel">취소</button>
           </div>`;
         card.appendChild(editDiv);
-        editDiv.querySelector('.edit-cancel').onclick = ()=>renderDailyTab(panel);
+        editDiv.querySelector('.edit-cancel').onclick = ()=>renderDailyTab(panel, showAll);
         editDiv.querySelector('.edit-save').onclick = async ()=>{
           const newPages = editDiv.querySelector('.edit-pages').value.trim();
           const newNote = editDiv.querySelector('.edit-note').value.trim();
@@ -1105,7 +1109,7 @@ const db = firebase.firestore();
           entry.revisions.push({ note: entry.note, pagesRead: entry.pagesRead, date: entry.date, at: Date.now() });
           entry.pagesRead = newPages; entry.note = newNote;
           const ok = await saveRecord(state.studentName, state.record);
-          if(ok){ toast('기록을 수정했어요.'); renderDailyTab(panel); }
+          if(ok){ toast('기록을 수정했어요.'); renderDailyTab(panel, showAll); }
           else { entry.revisions.pop(); toast('저장에 실패했어요.'); }
         };
       };
