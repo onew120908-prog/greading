@@ -487,7 +487,7 @@ const db = firebase.firestore();
       { key: 'book', label: '잇다', color: '#B4862B' },
       { key: 'free', label: '짓다', color: '#5B7A9E' },
       { key: 'memo', label: '쓰다', color: '#7A5C3E' },
-      { key: 'mine', label: '담다', color: '#6B6152' },
+      { key: 'mine', label: '찍다', color: '#3A6E8F' },
     ],
     themeColor: '#2F5D4E',
   };
@@ -812,6 +812,7 @@ const db = firebase.firestore();
     if(state.role === 'teacher' && state.teacherView === 'detail') return renderTeacherDetail();
     if(state.role === 'teacher' && state.teacherView === 'settings') return renderTeacherSettings();
     if(state.role === 'teacher' && state.teacherView === 'pelchi') return renderTeacherPelchi();
+    if(state.role === 'teacher' && state.teacherView === 'photo') return renderTeacherPhoto();
   }
 
   function topbar(rightHtml){
@@ -3039,8 +3040,91 @@ AI를 참고 자료로 활용하는 것과 AI에게 생각을 위탁하는 것 �
     if(state.role==='teacher' && state.teacherView==='list') renderTeacherList();
   }
 
+  // ---------- 찍다 탭 (학생) ----------
+  async function renderMineTab(panel){
+    panel.innerHTML = `<div class="section-title serif">찍다 · 사진 제출</div><div class="empty">불러오는 중...</div>`;
+    const name = state.studentName;
+    let doc, photos = [];
+    try {
+      doc = await db.collection('photos').doc(name).get();
+      photos = (doc.exists && doc.data().photos) ? doc.data().photos : [];
+    } catch(e){ panel.innerHTML = `<div class="empty">불러오기 실패: ${esc(e.message)}</div>`; return; }
+
+    panel.innerHTML = `
+      <div class="section-title serif">찍다 · 사진 제출</div>
+      <div class="section-desc">숙제 사진을 올리면 선생님께 전달돼요. 사진은 압축되어 저장됩니다.</div>
+      <div style="margin-bottom:20px;">
+        <label style="display:block;border:2px dashed var(--border,#ccc);border-radius:10px;padding:18px;text-align:center;cursor:pointer;color:var(--muted,#888);font-size:14px;" id="photo-label">
+          <input type="file" accept="image/*" id="photo-input" hidden>
+          📷 사진을 선택하거나 여기에 끌어다 놓으세요
+        </label>
+        <div id="photo-preview-wrap" style="display:none;margin-top:10px;">
+          <img id="photo-preview" style="max-width:100%;border-radius:8px;max-height:240px;object-fit:cover;" alt="">
+          <div style="margin-top:8px;">
+            <input id="photo-title" class="input-box" type="text" placeholder="제목 (예: 1회차 활동지)" style="width:100%;margin-bottom:6px;">
+            <textarea id="photo-memo" class="input-box" placeholder="메모 (선택)" style="width:100%;min-height:60px;resize:vertical;"></textarea>
+          </div>
+          <button class="btn" id="photo-submit" style="margin-top:8px;">제출하기</button>
+        </div>
+      </div>
+      <div id="photo-list">
+        ${photos.length === 0 ? `<div class="empty" style="padding:20px 0;">아직 제출한 사진이 없어요.</div>` :
+          photos.slice().reverse().map(p=>`
+            <div style="background:var(--card,#fff);border:1px solid var(--border,#eee);border-radius:10px;padding:12px;margin-bottom:10px;">
+              <img src="${p.dataUrl}" style="width:100%;border-radius:6px;max-height:220px;object-fit:cover;" alt="">
+              <div style="margin-top:6px;font-weight:600;font-size:14px;">${esc(p.title||'')}</div>
+              ${p.memo?`<div style="font-size:12px;color:var(--muted,#888);margin-top:2px;">${esc(p.memo)}</div>`:''}
+              <div style="font-size:11px;color:var(--muted,#aaa);margin-top:4px;">${fmtDateTime(p.createdAt)}</div>
+            </div>`).join('')}
+      </div>`;
+
+    let selectedDataUrl = null;
+    const input = panel.querySelector('#photo-input');
+    const previewWrap = panel.querySelector('#photo-preview-wrap');
+    const previewImg = panel.querySelector('#photo-preview');
+
+    function handleFile(file){
+      if(!file || !file.type.startsWith('image/')) return;
+      const reader = new FileReader();
+      reader.onload = e => {
+        // compress via canvas
+        const img = new Image();
+        img.onload = () => {
+          const MAX = 800;
+          let w = img.width, h = img.height;
+          if(w > MAX || h > MAX){ if(w>h){ h=Math.round(h*MAX/w); w=MAX; } else { w=Math.round(w*MAX/h); h=MAX; } }
+          const canvas = document.createElement('canvas');
+          canvas.width=w; canvas.height=h;
+          canvas.getContext('2d').drawImage(img,0,0,w,h);
+          selectedDataUrl = canvas.toDataURL('image/jpeg', 0.75);
+          previewImg.src = selectedDataUrl;
+          previewWrap.style.display = 'block';
+        };
+        img.src = e.target.result;
+      };
+      reader.readAsDataURL(file);
+    }
+
+    input.onchange = () => handleFile(input.files[0]);
+    panel.querySelector('#photo-label').ondragover = e => e.preventDefault();
+    panel.querySelector('#photo-label').ondrop = e => { e.preventDefault(); handleFile(e.dataTransfer.files[0]); };
+
+    panel.querySelector('#photo-submit').onclick = async () => {
+      if(!selectedDataUrl){ toast('사진을 먼저 선택해 주세요.'); return; }
+      const title = panel.querySelector('#photo-title').value.trim();
+      const memo = panel.querySelector('#photo-memo').value.trim();
+      const entry = { id: Date.now()+'', createdAt: Date.now(), dataUrl: selectedDataUrl, title, memo };
+      photos.push(entry);
+      try {
+        await db.collection('photos').doc(name).set({ photos });
+        toast('사진을 제출했어요! 📷');
+        renderMineTab(panel);
+      } catch(e){ toast('저장 실패: '+e.message); photos.pop(); }
+    };
+  }
+
   function teacherTopbar(){
-    return topbar(`<button id="t-pelchi">펼치다 현황</button><button id="t-settings">관리자 설정</button><button id="home">처음으로</button>`);
+    return topbar(`<button id="t-pelchi">펼치다 현황</button><button id="t-photo">찍다 현황</button><button id="t-settings">관리자 설정</button><button id="home">처음으로</button>`);
   }
 
   function renderTeacherList(){
@@ -3072,6 +3156,7 @@ AI를 참고 자료로 활용하는 것과 AI에게 생각을 위탁하는 것 �
       </div>`;
     document.getElementById('home').onclick = () => { state.role=null; clearSession(); render(); };
     document.getElementById('t-pelchi').onclick = () => { state.teacherView='pelchi'; render(); };
+    document.getElementById('t-photo').onclick = () => { state.teacherView='photo'; render(); };
     document.getElementById('t-settings').onclick = () => { state.teacherView='settings'; render(); };
     const dlBtn = document.getElementById('dl-excel');
     if(dlBtn) dlBtn.onclick = downloadAllRecordsExcel;
@@ -3151,6 +3236,7 @@ AI를 참고 자료로 활용하는 것과 AI에게 생각을 위탁하는 것 �
       </div>`;
     document.getElementById('home').onclick = () => { state.role=null; clearSession(); render(); };
     document.getElementById('t-pelchi').onclick = () => { state.teacherView='pelchi'; render(); };
+    document.getElementById('t-photo').onclick = () => { state.teacherView='photo'; render(); };
     document.getElementById('t-settings').onclick = () => { state.teacherView='settings'; render(); };
     document.getElementById('back').onclick = () => { state.teacherView='list'; render(); };
     document.getElementById('tcal-prev').onclick = () => { state.teacherStickerMonth = shiftMonth(state.teacherStickerMonth,-1); renderTeacherDetail(); };
@@ -3420,6 +3506,7 @@ AI를 참고 자료로 활용하는 것과 AI에게 생각을 위탁하는 것 �
 
     document.getElementById('home').onclick = () => { state.role=null; clearSession(); render(); };
     document.getElementById('t-pelchi').onclick = () => {};
+    document.getElementById('t-photo').onclick = () => { state.teacherView='photo'; render(); };
     document.getElementById('t-settings').onclick = () => { state.teacherView='settings'; render(); };
 
     shell.querySelectorAll('.act-subtab').forEach(btn=>{
@@ -3493,6 +3580,55 @@ AI를 참고 자료로 활용하는 것과 AI에게 생각을 위탁하는 것 �
         else toast('저장에 실패했어요.');
       };
     }
+  }
+
+  // ---------- teacher photo view ----------
+  async function renderTeacherPhoto(){
+    shell.innerHTML = `
+      ${teacherTopbar()}
+      <div class="container">
+        <div class="section-title serif" style="font-size:20px;margin-bottom:4px;">찍다 · 제출 사진 현황</div>
+        <div class="section-desc">학생들이 제출한 사진을 학생별로 확인할 수 있어요.</div>
+        <div id="photo-teacher-body"><div class="empty">불러오는 중...</div></div>
+      </div>`;
+    document.getElementById('home').onclick = () => { state.role=null; clearSession(); render(); };
+    document.getElementById('t-pelchi').onclick = () => { state.teacherView='pelchi'; render(); };
+    document.getElementById('t-photo').onclick = () => {};
+    document.getElementById('t-settings').onclick = () => { state.teacherView='settings'; render(); };
+
+    const body = document.getElementById('photo-teacher-body');
+    const students = state.teacherStudents || [];
+    if(!students.length){ body.innerHTML = `<div class="empty">등록된 학생이 없어요.</div>`; return; }
+
+    // load all photos docs in parallel
+    const results = await Promise.all(students.map(async s => {
+      try {
+        const doc = await db.collection('photos').doc(s.name).get();
+        const photos = (doc.exists && doc.data().photos) ? doc.data().photos : [];
+        return { name: s.name, photos };
+      } catch(e){ return { name: s.name, photos: [] }; }
+    }));
+
+    const withPhotos = results.filter(r => r.photos.length > 0);
+    if(!withPhotos.length){ body.innerHTML = `<div class="empty"><div class="big">📷</div>아직 제출된 사진이 없어요.</div>`; return; }
+
+    body.innerHTML = withPhotos.map(r => `
+      <div style="margin-bottom:24px;">
+        <div style="font-weight:700;font-size:15px;margin-bottom:8px;padding-bottom:4px;border-bottom:1px solid var(--border,#eee);">
+          ${esc(r.name)} <span style="font-size:12px;font-weight:400;color:var(--muted,#888);">${r.photos.length}장</span>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px;">
+          ${r.photos.slice().reverse().map(p => `
+            <div style="background:var(--card,#fff);border:1px solid var(--border,#eee);border-radius:8px;overflow:hidden;">
+              <img src="${p.dataUrl}" style="width:100%;height:120px;object-fit:cover;display:block;" alt="">
+              <div style="padding:6px 8px;">
+                ${p.title?`<div style="font-size:12px;font-weight:600;">${esc(p.title)}</div>`:''}
+                ${p.memo?`<div style="font-size:11px;color:var(--muted,#888);">${esc(p.memo)}</div>`:''}
+                <div style="font-size:10px;color:var(--muted,#aaa);margin-top:2px;">${fmtDateTime(p.createdAt)}</div>
+              </div>
+            </div>`).join('')}
+        </div>
+      </div>`).join('');
   }
 
   // ---------- teacher settings ----------
@@ -3848,6 +3984,7 @@ AI를 참고 자료로 활용하는 것과 AI에게 생각을 위탁하는 것 �
 
     document.getElementById('home').onclick = () => { state.role=null; clearSession(); render(); };
     document.getElementById('t-pelchi').onclick = () => { state.teacherView='pelchi'; render(); };
+    document.getElementById('t-photo').onclick = () => { state.teacherView='photo'; render(); };
     document.getElementById('t-settings').onclick = () => {};
     document.getElementById('back').onclick = () => { state.teacherView='list'; render(); };
 
