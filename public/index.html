@@ -3080,11 +3080,27 @@ AI를 참고 자료로 활용하는 것과 AI에게 생각을 위탁하는 것 �
       <div id="photo-list">
         ${photos.length === 0 ? `<div class="empty" style="padding:20px 0;">아직 제출한 사진이 없어요.</div>` :
           photos.slice().reverse().map(p=>`
-            <div style="background:var(--card,#fff);border:1px solid var(--border,#eee);border-radius:10px;padding:12px;margin-bottom:10px;">
+            <div data-pid="${p.id}" style="background:var(--card,#fff);border:1px solid var(--border,#eee);border-radius:10px;padding:12px;margin-bottom:10px;">
               <img src="${p.dataUrl}" style="width:100%;border-radius:6px;max-height:220px;object-fit:cover;" alt="">
-              <div style="margin-top:6px;font-weight:600;font-size:14px;">${esc(p.title||'')}</div>
-              ${p.memo?`<div style="font-size:12px;color:var(--muted,#888);margin-top:2px;">${esc(p.memo)}</div>`:''}
-              <div style="font-size:11px;color:var(--muted,#aaa);margin-top:4px;">${fmtDateTime(p.createdAt)}</div>
+              <div class="photo-view-mode">
+                <div style="margin-top:6px;font-weight:600;font-size:14px;">${esc(p.title||'')}</div>
+                ${p.memo?`<div style="font-size:12px;color:var(--muted,#888);margin-top:2px;">${esc(p.memo)}</div>`:''}
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-top:6px;">
+                  <span style="font-size:11px;color:var(--muted,#aaa);">${fmtDateTime(p.createdAt)}</span>
+                  <span>
+                    <button class="btn btn-ghost btn-sm photo-edit-btn" data-pid="${p.id}" style="font-size:11px;padding:2px 8px;">수정</button>
+                    <button class="btn btn-ghost btn-sm photo-del-btn" data-pid="${p.id}" style="font-size:11px;padding:2px 8px;color:#c00;">삭제</button>
+                  </span>
+                </div>
+              </div>
+              <div class="photo-edit-mode" style="display:none;margin-top:6px;">
+                <input class="input-box photo-edit-title" type="text" value="${esc(p.title||'')}" style="width:100%;margin-bottom:6px;">
+                <textarea class="input-box photo-edit-memo" style="width:100%;min-height:52px;resize:vertical;">${esc(p.memo||'')}</textarea>
+                <div style="display:flex;gap:6px;margin-top:6px;">
+                  <button class="btn btn-sm photo-save-btn" data-pid="${p.id}">저장</button>
+                  <button class="btn btn-ghost btn-sm photo-cancel-btn" data-pid="${p.id}">취소</button>
+                </div>
+              </div>
             </div>`).join('')}
       </div>`;
 
@@ -3118,6 +3134,47 @@ AI를 참고 자료로 활용하는 것과 AI에게 생각을 위탁하는 것 �
     input.onchange = () => handleFile(input.files[0]);
     panel.querySelector('#photo-label').ondragover = e => e.preventDefault();
     panel.querySelector('#photo-label').ondrop = e => { e.preventDefault(); handleFile(e.dataTransfer.files[0]); };
+
+    // 수정/삭제 버튼
+    panel.querySelectorAll('.photo-edit-btn').forEach(btn => {
+      btn.onclick = () => {
+        const card = panel.querySelector(`[data-pid="${btn.dataset.pid}"]`);
+        card.querySelector('.photo-view-mode').style.display = 'none';
+        card.querySelector('.photo-edit-mode').style.display = 'block';
+      };
+    });
+    panel.querySelectorAll('.photo-cancel-btn').forEach(btn => {
+      btn.onclick = () => {
+        const card = panel.querySelector(`[data-pid="${btn.dataset.pid}"]`);
+        card.querySelector('.photo-view-mode').style.display = '';
+        card.querySelector('.photo-edit-mode').style.display = 'none';
+      };
+    });
+    panel.querySelectorAll('.photo-save-btn').forEach(btn => {
+      btn.onclick = async () => {
+        const card = panel.querySelector(`[data-pid="${btn.dataset.pid}"]`);
+        const p = photos.find(x=>x.id===btn.dataset.pid);
+        if(!p) return;
+        p.title = card.querySelector('.photo-edit-title').value.trim();
+        p.memo = card.querySelector('.photo-edit-memo').value.trim();
+        try {
+          await db.collection('photos').doc(name).set({ photos });
+          toast('수정됐어요!');
+          renderMineTab(panel);
+        } catch(e){ toast('저장 실패: '+e.message); }
+      };
+    });
+    panel.querySelectorAll('.photo-del-btn').forEach(btn => {
+      btn.onclick = async () => {
+        if(!confirm('이 사진을 삭제할까요?')) return;
+        photos = photos.filter(x=>x.id!==btn.dataset.pid);
+        try {
+          await db.collection('photos').doc(name).set({ photos });
+          toast('삭제됐어요.');
+          renderMineTab(panel);
+        } catch(e){ toast('삭제 실패: '+e.message); }
+      };
+    });
 
     panel.querySelector('#photo-submit').onclick = async () => {
       if(!selectedDataUrl){ toast('사진을 먼저 선택해 주세요.'); return; }
