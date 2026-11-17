@@ -3056,11 +3056,12 @@ AI를 참고 자료로 활용하는 것과 AI에게 생각을 위탁하는 것 �
 
     panel.innerHTML = `
       <div class="section-title serif">찍다 · 사진 제출</div>
+      ${(state.studentName||'').startsWith('24기') ? `
       <div style="background:var(--card,#fff);border:1.5px solid var(--accent,#4a7c59);border-radius:10px;padding:14px 16px;margin-bottom:16px;">
         <div style="font-size:13px;font-weight:600;color:var(--accent,#4a7c59);margin-bottom:6px;">📖 나니아 연대기 · 새벽 출정호 항해 활동지</div>
         <div style="font-size:12.5px;color:var(--text,#333);margin-bottom:10px;">아래 링크를 눌러서 활동지를 작성하세요.</div>
         <a href="https://reading-a8c63.web.app/dawn-treader.html" target="_blank" style="display:block;background:var(--accent,#4a7c59);color:#fff;text-align:center;padding:10px;border-radius:8px;font-size:13px;font-weight:600;text-decoration:none;">⛵ 새벽 출정호 항해 지도 열기</a>
-      </div>
+      </div>` : ''}
       <div class="section-desc">숙제 사진을 올리면 선생님께 전달돼요. 사진은 압축되어 저장됩니다.</div>
       <div style="margin-bottom:20px;">
         <label style="display:block;border:2px dashed var(--border,#ccc);border-radius:10px;padding:18px;text-align:center;cursor:pointer;color:var(--muted,#888);font-size:14px;" id="photo-label">
