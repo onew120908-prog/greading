@@ -505,7 +505,7 @@ const db = firebase.firestore();
   };
 
   function uid(){ return Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
-  function todayStr(){ return new Date().toISOString().slice(0,10); }
+  function todayStr(){ const d=new Date(); return `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}`; }
 
   // ── 임시저장(draft) 헬퍼 ──
   const DRAFT_PREFIX = 'greading_draft_';
