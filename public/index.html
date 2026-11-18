@@ -1279,7 +1279,7 @@ const db = firebase.firestore();
       if(dup){ toast('이미 같은 내용의 기록이 있어요.'); return; }
       saving = true;
       btnSaving(btn);
-      const entry = { id:uid(), type:'book', date:end||todayStr(), createdAt:Date.now(), title, author, startDate:start, endDate:end, quote, review, rating, feedback:null };
+      const entry = { id:uid(), type:'book', date:todayStr(), createdAt:Date.now(), title, author, startDate:start, endDate:end, quote, review, rating, feedback:null };
       if(pw) entry.password = pw;
       state.record.entries.push(entry);
       const ok = await saveRecord(state.studentName, state.record);
