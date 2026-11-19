@@ -3086,7 +3086,7 @@ AI를 참고 자료로 활용하는 것과 AI에게 생각을 위탁하는 것 �
       <div style="background:var(--card,#fff);border:1.5px solid var(--border,#ccc);border-radius:10px;padding:14px 16px;margin-bottom:16px;">
         <div style="font-size:13px;font-weight:600;margin-bottom:6px;">📊 나의 독서 기록 시트</div>
         <div style="font-size:12.5px;color:var(--muted,#888);margin-bottom:10px;">아래 버튼을 눌러 구글시트에서 본인 기록을 확인하고 남겨주세요.</div>
-        <a href="https://docs.google.com/spreadsheets/d/1rljeJRdFsKiFutl0G8knjbLmdpPENIA9xhHlX9wGkSE/edit?gid=4#gid=4" target="_blank" style="display:block;background:#1a73e8;color:#fff;text-align:center;padding:10px;border-radius:8px;font-size:13px;font-weight:600;text-decoration:none;">📋 구글시트 열기</a>
+        <button onclick="(function(){const pw=prompt('비밀번호를 입력하세요');if(pw==='ga2026'){window.open('https://docs.google.com/spreadsheets/d/1rljeJRdFsKiFutl0G8knjbLmdpPENIA9xhHlX9wGkSE/edit?gid=4#gid=4','_blank')}else if(pw!==null){alert('비밀번호가 틀렸어요.')}})()" style="display:block;width:100%;background:#1a73e8;color:#fff;text-align:center;padding:10px;border-radius:8px;font-size:13px;font-weight:600;border:none;cursor:pointer;">📋 구글시트 열기</button>
       </div>
       ${GAS_URL ? `
       <div id="daily-record-card" style="background:var(--card,#fff);border:1.5px solid #7c5cbf;border-radius:10px;padding:14px 16px;margin-bottom:16px;">
