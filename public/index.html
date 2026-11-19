@@ -3232,7 +3232,7 @@ AI를 참고 자료로 활용하는 것과 AI에게 생각을 위탁하는 것 �
     // 일일독서기록 제출
     const recSubmit = panel.querySelector('#rec-submit');
     if(recSubmit){
-      recSubmit.onclick = async () => {
+      async function submitRecord(mode){
         const code = panel.querySelector('#rec-code').value.trim();
         const essay = panel.querySelector('#rec-essay').value;
         const readMin = panel.querySelector('#rec-read-min').value;
@@ -3250,25 +3250,29 @@ AI를 참고 자료로 활용하는 것과 AI에게 생각을 위탁하는 것 �
         recSubmit.disabled = true;
         recSubmit.textContent = '제출 중...';
         const params = new URLSearchParams({
-          date: todayStr(),
-          studentCode: code,
-          essayNum: essay,
-          readMin, readSec: readSec||'0',
-          writeMin, writeSec: writeSec||'0',
-          reread,
-          circleCount: circle||'0',
-          triangleCount: triangle||'0',
-          topicScore: topicScore||'0'
+          date: todayStr(), studentCode: code, essayNum: essay,
+          readMin, readSec: readSec||'0', writeMin, writeSec: writeSec||'0',
+          reread, circleCount: circle||'0', triangleCount: triangle||'0',
+          topicScore: topicScore||'0', mode: mode||'new', _t: Date.now()
         });
         try {
-          await fetch(GAS_URL, { method:'POST', mode:'no-cors', body: params });
+          const res = await fetch(GAS_URL + '?' + params.toString());
+          const json = await res.json();
           msg.style.display = 'block';
-          msg.style.color = '#4a7c59';
-          msg.textContent = '✅ 제출됐어요! 구글시트에서 확인해 주세요.';
-          // 입력값 초기화
-          ['rec-read-min','rec-read-sec','rec-write-min','rec-write-sec','rec-circle','rec-triangle','rec-topic-score'].forEach(id=>{
-            const el = panel.querySelector('#'+id); if(el) el.value='';
-          });
+          if(json.duplicate){
+            msg.style.color = '#c77800';
+            msg.innerHTML = '⚠️ 오늘 이미 제출한 기록이 있어요.<br><button id="rec-update-btn" style="margin-top:6px;padding:6px 16px;background:#7c5cbf;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:13px;">수정 제출 (기존 기록 덮어쓰기)</button>';
+            panel.querySelector('#rec-update-btn').onclick = () => submitRecord('update');
+          } else if(json.success){
+            msg.style.color = '#4a7c59';
+            msg.textContent = mode==='update' ? '✅ 수정됐어요!' : '✅ 제출됐어요!';
+            ['rec-read-min','rec-read-sec','rec-write-min','rec-write-sec','rec-circle','rec-triangle','rec-topic-score'].forEach(id=>{
+              const el = panel.querySelector('#'+id); if(el) el.value='';
+            });
+          } else {
+            msg.style.color = '#c00';
+            msg.textContent = '제출 실패: '+(json.error||'알 수 없는 오류');
+          }
         } catch(e){
           msg.style.display = 'block';
           msg.style.color = '#c00';
@@ -3276,7 +3280,8 @@ AI를 참고 자료로 활용하는 것과 AI에게 생각을 위탁하는 것 �
         }
         recSubmit.disabled = false;
         recSubmit.textContent = '제출하기';
-      };
+      }
+      recSubmit.onclick = () => submitRecord('new');
     }
 
     // 수정/삭제 버튼
