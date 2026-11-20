@@ -933,8 +933,13 @@ const ESSAY_LIST = [
     const submit = async () => {
       const v = nm.value.trim();
       if(!v){ nmErr.textContent = '이름을 입력해 주세요.'; return; }
-      if(!/^(00|22|23|24)기[가-힣]{2,4}$/.test(v)){
+      if(!/^(00|19|22|23|24)기[가-힣]{2,4}$/.test(v)){
         nmErr.textContent = '형식이 맞지 않아요. 예) 22기홍길동 · 23기이수연 · 24기박지훈 (띄어쓰기 없이)';
+        return;
+      }
+      const ALLOWED_19 = ['19기윤채운','19기김유은','19기김주하','19기오태경','19기채종은','19기최승아','19기정효은'];
+      if(v.startsWith('19기') && !ALLOWED_19.includes(v)){
+        nmErr.textContent = '접속 권한이 없는 이름이에요.';
         return;
       }
       nmErr.textContent = '';
@@ -954,7 +959,11 @@ const ESSAY_LIST = [
   // ---------- student app ----------
   function tabsHtml(){
     const sections = cfg().sections;
-    const tabs = [...sections];
+    let tabs = [...sections];
+    if((state.studentName||'').startsWith('19기')){
+      const allowed19 = new Set(['daily','book','memo','stickers']);
+      tabs = tabs.filter(t => allowed19.has(t.key));
+    }
     if(isPelchiUser()){
       const stickerIdx = tabs.findIndex(t=>t.key==='stickers');
       const pelchi = { key:'pelchi', label:'펼치다', color:'#6B4FA8' };
