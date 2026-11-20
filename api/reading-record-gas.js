@@ -28,24 +28,17 @@ function doGet(e) {
       }
     }
 
-    // 중복 체크 (mode=new 일 때만)
+    // 같은 학생+사설번호 기존 행 확인 (날짜 무관)
     const recordSheet = ss.getSheetByName('일일기록');
-    if (!p.mode || p.mode === 'new') {
-      const existing = recordSheet.getDataRange().getValues();
-      for (let i = 1; i < existing.length; i++) {
-        if (existing[i][0] === p.date && existing[i][3] === p.studentCode && existing[i][5] === p.essayNum) {
-          return ContentService
-            .createTextOutput(JSON.stringify({ duplicate: true }))
-            .setMimeType(ContentService.MimeType.JSON);
-        }
-      }
-    }
-
-    // mode=update: 기존 행 삭제 후 재추가
-    if (p.mode === 'update') {
-      const existing = recordSheet.getDataRange().getValues();
-      for (let i = existing.length - 1; i >= 1; i--) {
-        if (existing[i][0] === p.date && existing[i][3] === p.studentCode && existing[i][5] === p.essayNum) {
+    const existing = recordSheet.getDataRange().getValues();
+    let isDuplicate = false;
+    for (let i = existing.length - 1; i >= 1; i--) {
+      if (existing[i][3] === p.studentCode && existing[i][5] === p.essayNum) {
+        isDuplicate = true;
+        if (!p.mode || p.mode === 'new') {
+          // 자동 덮어쓰기: 기존 행 삭제
+          recordSheet.deleteRow(i + 1);
+        } else if (p.mode === 'update') {
           recordSheet.deleteRow(i + 1);
         }
       }
@@ -94,7 +87,7 @@ function doGet(e) {
     ]);
 
     return ContentService
-      .createTextOutput(JSON.stringify({ success: true, studentName, essayTitle }))
+      .createTextOutput(JSON.stringify({ success: true, updated: isDuplicate, studentName, essayTitle }))
       .setMimeType(ContentService.MimeType.JSON);
 
   } catch (err) {

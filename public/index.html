@@ -3281,12 +3281,12 @@ AI를 참고 자료로 활용하는 것과 AI에게 생각을 위탁하는 것 �
           const json = await res.json();
           msg.style.display = 'block';
           if(json.duplicate){
-            msg.style.color = '#c77800';
-            msg.innerHTML = '⚠️ 오늘 이미 제출한 기록이 있어요.<br><button id="rec-update-btn" style="margin-top:6px;padding:6px 16px;background:#7c5cbf;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:13px;">수정 제출 (기존 기록 덮어쓰기)</button>';
-            panel.querySelector('#rec-update-btn').onclick = () => submitRecord('update');
+            // 자동 덮어쓰기
+            await submitRecord('update');
+            return;
           } else if(json.success){
             msg.style.color = '#4a7c59';
-            msg.textContent = mode==='update' ? '✅ 수정됐어요!' : '✅ 제출됐어요!';
+            msg.textContent = json.updated ? '✅ 기록이 수정됐어요!' : '✅ 제출됐어요!';
             ['rec-read-min','rec-read-sec','rec-write-min','rec-write-sec','rec-circle','rec-triangle','rec-topic-score'].forEach(id=>{
               const el = panel.querySelector('#'+id); if(el) el.value='';
             });
