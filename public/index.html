@@ -3165,6 +3165,16 @@ AI를 참고 자료로 활용하는 것과 AI에게 생각을 위탁하는 것 �
           `;
         })()}
       </div>` : ''}
+      <div id="answer-sheet-card" style="background:var(--card,#fff);border:1.5px solid #e07b39;border-radius:10px;padding:14px 16px;margin-bottom:16px;">
+        <div style="font-size:13px;font-weight:700;color:#e07b39;margin-bottom:8px;">📄 오늘의 사설 채점지</div>
+        <div style="font-size:12.5px;color:var(--muted,#888);margin-bottom:10px;">채점지를 보려면 오늘 읽은 사설 번호를 입력하세요.</div>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <input id="ans-code-input" class="input-box" placeholder="예: S002" style="flex:1;font-family:monospace;">
+          <button id="ans-unlock-btn" class="btn" style="background:#e07b39;border-color:#e07b39;white-space:nowrap;">확인</button>
+        </div>
+        <div id="ans-msg" style="margin-top:8px;font-size:12.5px;color:#c00;display:none;"></div>
+        <div id="ans-content" style="display:none;margin-top:12px;"></div>
+      </div>
       <div class="section-desc">숙제 사진을 올리면 선생님께 전달돼요. 사진은 압축되어 저장됩니다.</div>
       <div style="margin-bottom:20px;">
         <label style="display:block;border:2px dashed var(--border,#ccc);border-radius:10px;padding:18px;text-align:center;cursor:pointer;color:var(--muted,#888);font-size:14px;" id="photo-label">
@@ -3291,6 +3301,46 @@ AI를 참고 자료로 활용하는 것과 AI에게 생각을 위탁하는 것 �
         recSubmit.textContent = '제출하기';
       }
       recSubmit.onclick = () => submitRecord('new');
+    }
+
+    // 채점지 확인
+    const ansUnlockBtn = panel.querySelector('#ans-unlock-btn');
+    if(ansUnlockBtn){
+      ansUnlockBtn.onclick = async () => {
+        const input = panel.querySelector('#ans-code-input');
+        const msg = panel.querySelector('#ans-msg');
+        const content = panel.querySelector('#ans-content');
+        const code = input.value.trim().toUpperCase();
+        msg.style.display = 'none';
+        content.style.display = 'none';
+        if(!code){ msg.textContent = '사설 번호를 입력해 주세요.'; msg.style.display='block'; return; }
+        ansUnlockBtn.textContent = '조회 중...'; ansUnlockBtn.disabled = true;
+        try {
+          const doc = await db.collection('answerSheets').doc(code).get();
+          if(!doc.exists){
+            msg.textContent = '채점지를 찾을 수 없어요. 번호를 다시 확인해 주세요.';
+            msg.style.display = 'block';
+          } else {
+            const d = doc.data();
+            const summaries = (d.summaries||[]).map((s,i)=>`
+              <div style="margin-bottom:8px;">
+                <span style="font-size:11px;font-weight:700;color:#e07b39;">문단 ${i+1} 요약</span>
+                <div style="font-size:13px;margin-top:3px;line-height:1.6;">${esc(s)}</div>
+              </div>`).join('');
+            content.innerHTML = `
+              <div style="border-top:1px solid var(--border,#eee);padding-top:12px;">
+                <div style="font-size:12px;font-weight:700;color:var(--muted,#888);margin-bottom:10px;">📌 ${esc(code)} 채점지</div>
+                ${summaries}
+                ${d.topic ? `<div style="margin-top:10px;padding:10px;background:var(--bg2,#f8f4ee);border-radius:8px;">
+                  <span style="font-size:11px;font-weight:700;color:#e07b39;">주제</span>
+                  <div style="font-size:13px;margin-top:4px;line-height:1.6;">${esc(d.topic)}</div>
+                </div>` : ''}
+              </div>`;
+            content.style.display = 'block';
+          }
+        } catch(e){ msg.textContent = '불러오기 실패: '+e.message; msg.style.display='block'; }
+        ansUnlockBtn.textContent = '확인'; ansUnlockBtn.disabled = false;
+      };
     }
 
     // 수정/삭제 버튼
@@ -3906,6 +3956,26 @@ AI를 참고 자료로 활용하는 것과 AI에게 생각을 위탁하는 것 �
         </div>
 
         <div class="setting-card">
+          <h3>📄 사설 채점지 관리</h3>
+          <div class="section-desc">사설 번호를 비밀번호로 사용하는 채점지를 등록·수정할 수 있어요.</div>
+          <details id="as-add-form" style="margin-bottom:10px;">
+            <summary style="cursor:pointer;font-size:13px;color:#e07b39;font-weight:700;">+ 새 채점지 등록 / 수정</summary>
+            <div style="margin-top:12px;display:flex;flex-direction:column;gap:8px;">
+              <div class="field"><label>사설 번호 (비밀번호)</label><input id="as-num" placeholder="예: S002" style="font-family:monospace;"/></div>
+              <div class="field">
+                <label>문단별 요약 <span style="font-weight:400;color:var(--ink-soft);">(한 줄에 한 문단씩)</span></label>
+                <textarea id="as-summaries" style="width:100%;min-height:100px;font-size:13px;border:1px solid var(--paper-line);border-radius:8px;padding:8px;box-sizing:border-box;" placeholder="1문단 요약&#10;2문단 요약&#10;3문단 요약"></textarea>
+              </div>
+              <div class="field"><label>주제</label><textarea id="as-topic" style="width:100%;min-height:60px;font-size:13px;border:1px solid var(--paper-line);border-radius:8px;padding:8px;box-sizing:border-box;" placeholder="주제 문장을 입력하세요."></textarea></div>
+              <button class="btn btn-primary btn-sm" id="as-save" style="background:#e07b39;border-color:#e07b39;">채점지 저장</button>
+              <div id="as-save-msg" style="display:none;font-size:12.5px;"></div>
+            </div>
+          </details>
+          <div class="divider" style="margin:10px 0;"></div>
+          <div id="as-list"><div class="empty" style="font-size:13px;">불러오는 중...</div></div>
+        </div>
+
+        <div class="setting-card">
           <h3>펼치다 · 활동지 관리</h3>
           <div class="section-desc">활동지를 자유롭게 추가하거나 삭제할 수 있어요.</div>
           <details id="ws-add-form" style="margin-bottom:10px;">
@@ -4298,6 +4368,51 @@ AI를 참고 자료로 활용하는 것과 AI에게 생각을 위탁하는 것 �
         if(ok){ toast('활동지를 삭제했어요.'); renderTeacherSettings(); }
       };
     });
+
+    // 채점지 관리
+    (async ()=>{
+      const asList = document.getElementById('as-list');
+      try {
+        const snap = await db.collection('answerSheets').get();
+        if(snap.empty){ asList.innerHTML = `<div class="empty" style="font-size:13px;">등록된 채점지가 없어요.</div>`; }
+        else {
+          asList.innerHTML = snap.docs.map(d=>{
+            const data = d.data();
+            const summaryCount = (data.summaries||[]).length;
+            return `<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 4px;border-bottom:1px solid var(--paper-line);">
+              <div>
+                <span style="font-family:monospace;font-weight:700;">${esc(d.id)}</span>
+                <span style="font-size:12px;color:var(--ink-soft);margin-left:8px;">${summaryCount}문단 요약</span>
+              </div>
+              <button class="btn btn-ghost btn-sm as-del" data-id="${esc(d.id)}" style="color:#c00;font-size:11px;">삭제</button>
+            </div>`;
+          }).join('');
+          asList.querySelectorAll('.as-del').forEach(btn=>{
+            btn.onclick = async ()=>{
+              if(!confirm(`${btn.dataset.id} 채점지를 삭제할까요?`)) return;
+              await db.collection('answerSheets').doc(btn.dataset.id).delete();
+              toast('채점지를 삭제했어요.'); renderTeacherSettings();
+            };
+          });
+        }
+      } catch(e){ asList.innerHTML = `<div class="empty" style="font-size:13px;">불러오기 실패: ${esc(e.message)}</div>`; }
+    })();
+
+    document.getElementById('as-save').onclick = async ()=>{
+      const num = document.getElementById('as-num').value.trim().toUpperCase();
+      const rawSummaries = document.getElementById('as-summaries').value.trim();
+      const topic = document.getElementById('as-topic').value.trim();
+      const msgEl = document.getElementById('as-save-msg');
+      msgEl.style.display = 'none';
+      if(!num){ msgEl.textContent='사설 번호를 입력해 주세요.'; msgEl.style.color='#c00'; msgEl.style.display='block'; return; }
+      if(!rawSummaries){ msgEl.textContent='문단별 요약을 입력해 주세요.'; msgEl.style.color='#c00'; msgEl.style.display='block'; return; }
+      const summaries = rawSummaries.split('\n').map(l=>l.trim()).filter(Boolean);
+      try {
+        await db.collection('answerSheets').doc(num).set({ summaries, topic, updatedAt: Date.now() });
+        msgEl.textContent = `✅ ${num} 채점지가 저장됐어요.`; msgEl.style.color='#4a7c59'; msgEl.style.display='block';
+        renderTeacherSettings();
+      } catch(e){ msgEl.textContent='저장 실패: '+e.message; msgEl.style.color='#c00'; msgEl.style.display='block'; }
+    };
 
     // 예시 답안 관리
     const exSelect = document.getElementById('ex-ws-select');
