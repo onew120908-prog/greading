@@ -47,7 +47,7 @@ function doGet(e) {
     for (let i = 0; i < essayData.length; i++) {
       if (essayData[i][0] === p.essayNum) {
         essayTitle = essayData[i][3];
-        difficulty = essayData[i][5];
+        difficulty = p.difficulty || essayData[i][5];
         paraCount = Number(essayData[i][6]) || 0;
         const text = String(essayData[i][7] || '');
         charCount = text.replace(/[\s\n\r]/g, '').length;
