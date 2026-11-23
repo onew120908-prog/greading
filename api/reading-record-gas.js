@@ -33,14 +33,10 @@ function doGet(e) {
     const existing = recordSheet.getDataRange().getValues();
     let isDuplicate = false;
     for (let i = existing.length - 1; i >= 1; i--) {
-      if (existing[i][3] === p.studentCode && existing[i][5] === p.essayNum) {
+      // 시트 열 순서: D(3)=학생코드, E(4)=사설번호
+      if (existing[i][3] === p.studentCode && existing[i][4] === p.essayNum) {
         isDuplicate = true;
-        if (!p.mode || p.mode === 'new') {
-          // 자동 덮어쓰기: 기존 행 삭제
-          recordSheet.deleteRow(i + 1);
-        } else if (p.mode === 'update') {
-          recordSheet.deleteRow(i + 1);
-        }
+        recordSheet.deleteRow(i + 1);
       }
     }
 
@@ -76,8 +72,8 @@ function doGet(e) {
 
     // 시트에 행 추가
     recordSheet.appendRow([
-      p.date, grade, classNum, p.studentCode, studentName,
-      p.essayNum, essayTitle, difficulty, charCount, paraCount,
+      p.date, grade, classNum, p.studentCode, p.essayNum, studentName,
+      essayTitle, difficulty, charCount, paraCount,
       readMin, readSec, readingTime.toFixed(2),
       writeMin, writeSec, writeTime.toFixed(2),
       p.reread,
