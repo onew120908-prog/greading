@@ -70,8 +70,8 @@ function doGet(e) {
     const readSpeed = readingTime > 0 ? charCount / readingTime : 0;
     const effectiveSpeed = readSpeed * comprehension / 100;
 
-    // 시트에 행 추가
-    recordSheet.appendRow([
+    // 시트에 행 추가 (사설번호 순서 유지)
+    const newRow = [
       p.date, grade, classNum, p.studentCode, p.essayNum, studentName,
       essayTitle, difficulty, charCount, paraCount,
       readMin, readSec, readingTime.toFixed(2),
@@ -80,7 +80,25 @@ function doGet(e) {
       circleCount, triangleCount, topicScore,
       parScore.toFixed(1), comprehension.toFixed(1),
       readSpeed.toFixed(1), effectiveSpeed.toFixed(1)
-    ]);
+    ];
+
+    // 같은 학생(studentCode)의 행들 중 사설번호 순서에 맞는 위치에 삽입
+    const afterDel = recordSheet.getDataRange().getValues();
+    let insertRowIndex = afterDel.length + 1; // 기본: 맨 아래
+    for (let i = 1; i < afterDel.length; i++) {
+      const rowCode = afterDel[i][3]; // D열: 학생코드
+      const rowEssay = afterDel[i][4]; // E열: 사설번호
+      if (rowCode === p.studentCode && rowEssay > p.essayNum) {
+        insertRowIndex = i + 1;
+        break;
+      }
+    }
+    if (insertRowIndex > afterDel.length) {
+      recordSheet.appendRow(newRow);
+    } else {
+      recordSheet.insertRowBefore(insertRowIndex);
+      recordSheet.getRange(insertRowIndex, 1, 1, newRow.length).setValues([newRow]);
+    }
 
     return ContentService
       .createTextOutput(JSON.stringify({ success: true, updated: isDuplicate, studentName, essayTitle }))
